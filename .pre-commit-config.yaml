@@ -23,3 +23,22 @@ repos:
   - id: check-added-large-files
     args:
     - --maxkb=20
+- repo: https://github.com/pre-commit/pygrep-hooks
+  rev: v1.4.1
+  hooks:
+  - id: rst-backticks
+  - id: python-check-blanket-noqa
+  - id: python-no-log-warn
+  - id: python-no-eval
+- repo: local
+  hooks:
+  - id: pylint
+    name: pylint
+    entry: pylint "setup.py" "src/mech3ax"
+    language: python
+    always_run: true
+    pass_filenames: false
+    additional_dependencies:
+    - pylint==2.3.1
+    - Pillow==6.1.0
+    - pefile==2019.4.18

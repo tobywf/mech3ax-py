@@ -4,7 +4,7 @@ from zipfile import ZipFile
 
 from PIL import Image
 
-from .utils import ascii_zero
+from .utils import ascii_zterm
 
 TEXTURE_INFO = Struct("<6I")
 TEXTURE_RECORD = Struct("<32s2I")
@@ -16,6 +16,17 @@ def rgb16(pixels):
         yield ((pixel >> 11) & 0b11111) << 3
         yield ((pixel >> 5) & 0b111111) << 2
         yield ((pixel >> 0) & 0b11111) << 3
+
+
+def _stretch(img, stretch, name):
+    if stretch in (0, 3):
+        # unsure what stretch 3 implies. images look fine as is
+        return img
+    if stretch == 1:
+        return img.resize((img.width * 2, img.height), resample=Image.BICUBIC)
+    if stretch == 2:
+        return img.resize((img.width, img.height * 2), resample=Image.BICUBIC)
+    raise ValueError(f"Unknown stretch {stretch} for texture {name}")
 
 
 def _extract_texture(data, start, name):  # pylint: disable=too-many-locals
@@ -42,6 +53,7 @@ def _extract_texture(data, start, name):  # pylint: disable=too-many-locals
 
         if fmt == 11:
             alpha = data[offset : offset + size]
+            offset += size
         elif fmt == 3:
             alpha = bytes(255 if pixel else 0 for pixel in pixels)
 
@@ -69,18 +81,7 @@ def _extract_texture(data, start, name):  # pylint: disable=too-many-locals
         mask = Image.frombytes("L", (width, height), alpha)
         img.putalpha(mask)
 
-    if stretch == 0:
-        pass
-    elif stretch == 1:
-        img = img.resize((width * 2, height), resample=Image.BICUBIC)
-    elif stretch == 2:
-        img = img.resize((width, height * 2), resample=Image.BICUBIC)
-    elif stretch == 3:
-        img = img.resize((width * 2, height * 2), resample=Image.BICUBIC)
-    else:
-        raise ValueError(f"Unknown stretch {stretch} for texture {name}")
-
-    return img
+    return _stretch(img, stretch, name)
 
 
 def extract_textures(data):
@@ -95,7 +96,7 @@ def extract_textures(data):
     for i in range(count):
         name, start, magic = TEXTURE_RECORD.unpack_from(data, offset)
         assert magic == 0xFFFFFFFF, f"record: magic {i}"
-        name = ascii_zero(name)
+        name = ascii_zterm(name)
         yield name, _extract_texture(data, start, name)
         offset += TEXTURE_RECORD.size
 
