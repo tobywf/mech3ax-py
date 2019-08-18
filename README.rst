@@ -17,6 +17,7 @@ Currently supported:
 - Various versions of the MechWarror 3 base game, including US versions 1.0, 1.1, 1.2, Gold Edition and German version 1.0 and 1.2 (patched). If you are in possession of any other versions, especially the French versions, please get in touch! (The expansion, Pirate's Moon, is not supported.)
 - Sound files (``soundsL.zbd``, ``soundsH.zbd``)
 - All texture and image ``.zbd`` files
+- All messages extracted from ``Mech3Msg.dll`
 
 .. _IPython: https://ipython.org/
 
