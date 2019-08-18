@@ -130,3 +130,5 @@ sounds/
 textures/
 resources/
 mechlib/
+mechtex/
+*.blend*

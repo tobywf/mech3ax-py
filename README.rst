@@ -18,8 +18,37 @@ Currently supported:
 - Sound files (``soundsL.zbd``, ``soundsH.zbd``)
 - All texture and image ``.zbd`` files
 - All messages extracted from ``Mech3Msg.dll`
+- 'mech models from ``mechlib.zbd``, as well as the material index
+- Animations (``motion.zbd``) can be extracted, but it isn't currently understood how to apply the data to models correctly
+
+Additionally, there is a stand-alone script that can convert extracted models to a ``.blend`` file for the 3D creation suite `Blender`_. It requires Blender 2.80. Blender's APIs do change, so you may need to use a version closely matching that one. It will definitely *not* work with versions below 2.80, but if you have success running it with newer versions, let me know so I can update this README.
+
+It is a bit tricky to get running, because of the dependencies. Assuming Blender is installed, and you have extracted the models and material index to ``mechlib/``, and ``rmechtex.zbd`` to ``mechtex/``, you can run the script like so:
+
+.. code-block:: console
+
+    $ blender \
+        --background \
+        --factory-startup \
+        --python model2blend.py \
+        -- mechlib/mech_madcat.json mechtex/
+
+This also assumes the Blender executable can be found. Your install location may vary, but here's some general instructions. For macOS (and Linux), this can be achieved by an alias in your shell's profile, e.g. ``.bashrc``:
+
+.. code-block:: bash
+
+    alias blender="/Applications/Blender.app/Contents/MacOS/Blender"
+
+For Windows/PowerShell, you can add an alias to the appropriate ``profile.ps1``:
+
+.. code-block:: powershell
+
+    New-Alias blender "C:\Program Files\Blender Foundation\Blender\blender.exe"
+
+(The syntax for invoking the script will also be slightly different using PowerShell)
 
 .. _IPython: https://ipython.org/
+.. _Blender: https://www.blender.org/
 
 License
 -------
