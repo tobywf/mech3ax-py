@@ -1,6 +1,7 @@
 # Blender is probably not installed in the linting environment,
 # so importing bpy and bmesh will fail
 # pylint: disable=import-error
+import argparse
 import json
 import sys
 from functools import lru_cache
@@ -123,7 +124,49 @@ def _material_factory(tex_path, blend_path, materials):
     return _get_material
 
 
-def model_to_blend(json_path, tex_path, blend_path, materials):
+def _create_actions(animation):
+    objects = dict(bpy.data.objects.items())
+    frame_count = animation["frame_count"]
+
+    scene = bpy.context.scene
+    scene.frame_start = 1
+    scene.frame_end = frame_count
+
+    for obj_name, anim_data in animation.items():
+        if obj_name == "frame_count":
+            continue
+
+        try:
+            obj = objects[obj_name]
+        except KeyError:
+            continue
+
+        prev_loc, prev_rot = anim_data[0]
+        # delta_loc = [blender - first for blender, first in zip(obj.location, prev_loc)]
+        # blender_loc = [current + delta for delta, current in zip(delta_loc, prev_loc)]
+        # print(obj_name, tuple(obj.location), prev_loc)
+
+        obj.location = prev_loc
+        obj.keyframe_insert(data_path="location", frame=1)
+
+        obj.rotation_mode = "QUATERNION"
+        obj.rotation_quaternion = prev_rot
+        obj.keyframe_insert(data_path="rotation_quaternion", frame=1)
+
+        for frame, (next_loc, next_rot) in enumerate(anim_data[1:], 2):
+            if next_loc != prev_loc:
+                # blender_loc = [current + delta for delta, current in zip(delta_loc, next_loc)]
+                obj.location = next_loc
+                obj.keyframe_insert(data_path="location", frame=frame)
+                prev_loc = next_loc
+
+            if next_rot != prev_rot:
+                obj.rotation_quaternion = next_rot
+                obj.keyframe_insert(data_path="rotation_quaternion", frame=frame)
+                prev_rot = next_rot
+
+
+def model_to_blend(json_path, tex_path, blend_path, materials, anim_name):
     # empty scene
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
@@ -137,23 +180,88 @@ def model_to_blend(json_path, tex_path, blend_path, materials):
     # hack to convert Y-up model to Blender's coordinate system
     root.rotation_euler = (radians(90), radians(0), radians(180))
 
+    if anim_name:
+        animation = data["animations"][anim_name]
+        _create_actions(animation)
+
     bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        prog="blender --background --factory-startup --python model2blend.py --",
+        description="Convert dumped MechWarrior 3 model data to Blender files.",
+    )
+    parser.add_argument(
+        "model",
+        type=lambda value: Path(value).resolve(strict=True),
+        help="The the model's dumped data (JSON)",
+    )
+    parser.add_argument(
+        "tex_dir",
+        type=lambda value: Path(value).resolve(strict=True),
+        help="The path to a directory containing extracted 'mech textures",
+    )
+    parser.add_argument(
+        "--mat",
+        default=None,
+        type=lambda value: Path(value).resolve(strict=True),
+        help=(
+            "The material index (JSON). If not specified, the script will look "
+            "for 'materials.json' in the same directory as the model."
+        ),
+    )
+    parser.add_argument(
+        "--output",
+        default=None,
+        type=lambda value: Path(value).resolve(),
+        help=(
+            "The output Blender file. If not specified, the script will infer "
+            "the name from the model and animation, and output to the current "
+            "directory."
+        ),
+    )
+    parser.add_argument(
+        "--anim",
+        default=None,
+        help=(
+            "If specified, the animation name to apply to the model. "
+            "(The animation data is not posed, and it's difficult to save "
+            "multiple key-framed animations to a Blender file.)"
+        ),
+    )
+
+    # split our arguments from Blender arguments
     argv = sys.argv
     argv = argv[argv.index("--") + 1 :]
-    print(argv)
 
-    json_path = Path(argv[0]).resolve(strict=True)
-    tex_path = Path(argv[1]).resolve(strict=True)
-    blend_path = Path.cwd() / f"{json_path.stem}.blend"
-    mat_path = (json_path.parent / "materials.json").resolve(strict=True)
+    args = parser.parse_args(argv)
+
+    if not args.tex_dir.is_dir():
+        raise ValueError("tex_dir must be a directory")
+
+    if args.output:
+        blend_path = args.output
+    else:
+        if args.anim:
+            filename = f"{args.model.stem}_{args.anim}.blend"
+        else:
+            filename = f"{args.model.stem}.blend"
+        blend_path = Path.cwd() / filename
+
+    if args.mat:
+        mat_path = args.mat
+    else:
+        mat_path = (args.model.parent / "materials.json").resolve(strict=True)
+
+    print(f"Converting '{args.model}' to '{blend_path}' with animation '{args.anim}'")
+    print("Textures:", args.tex_dir)
+    print("Materials:", mat_path)
 
     with mat_path.open("r", encoding="utf-8") as f:
         materials = json.load(f)
 
-    model_to_blend(json_path, tex_path, blend_path, materials)
+    model_to_blend(args.model, args.tex_dir, blend_path, materials, args.anim)
 
 
 if __name__ == "__main__":
