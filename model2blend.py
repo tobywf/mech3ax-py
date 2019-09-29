@@ -1,4 +1,4 @@
-# Blender is probably not installed in the environment,
+# Blender is probably not installed in the linting environment,
 # so importing bpy and bmesh will fail
 # pylint: disable=import-error
 import json
