@@ -5,8 +5,8 @@ MechWarrior 3 Asset Extractor (``mech3ax``) is a library and some scripts to ext
 
 Obviously, this is an unofficial fan effort and not connected to the developers or publishers.
 
-.. image:: https://i.imgur.com/7GU4b7a.mp4
-   :target: https://imgur.com/7GU4b7a
+.. image:: .github/mech_annihilator_run.gif
+   :target: https://imgur.com/a/H5pB1Vd
 
 Currently supported:
 
