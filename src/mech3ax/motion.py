@@ -11,10 +11,10 @@ def parse_motion(motion):  # pylint: disable=too-many-locals
     four, unk, frame_count, part_count, minus_one, plus_one = MOTION_HEADER.unpack_from(
         motion, 0
     )
-    assert four == 4
-    assert minus_one == -1.0
-    assert plus_one == 1.0
-    assert unk > 0.0
+    assert four == 4, four
+    assert minus_one == -1.0, minus_one
+    assert plus_one == 1.0, plus_one
+    assert unk > 0.0, unk
 
     offset = MOTION_HEADER.size
     frame_count += 1
@@ -26,7 +26,7 @@ def parse_motion(motion):  # pylint: disable=too-many-locals
         part_name = motion[offset : offset + name_size].decode("ascii")
         offset += name_size
         twelve, = unpack_from("<I", motion, offset)
-        assert twelve == 12
+        assert twelve == 12, f"{part_name}: {twelve} == 12"
         offset += 4
         # location
         location_count = frame_count * 3
@@ -53,8 +53,7 @@ def extract_motions(data):
 
 
 def add_motions_to_models(motion_path, mechlib_path):
-    with motion_path.open("rb") as f:
-        data = f.read()
+    data = motion_path.read_bytes()
 
     mech_motion = defaultdict(dict)
     other_motion = {}

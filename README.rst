@@ -3,27 +3,60 @@ MechWarrior 3 Asset Extractor
 
 MechWarrior 3 Asset Extractor (``mech3ax``) is a library and some scripts to extract assets from the 1998 MechWarrior 3 game to modern formats. There is a companion project where I describe the reverse engineering of these assets, and how to extract other, semi-automatable assets such as ambient music and video files.
 
-Obviously it is an unofficial fan effort and not connected to the developers or publishers.
+Obviously, this is an unofficial fan effort and not connected to the developers or publishers.
 
-How to use
-----------
-
-**You will need a copy of the game. Do not ask me for an illegal copy.**
-
-The various library functions can be used to write a script to extract game assets, or this can be done in an interactive session (in which case, `IPython`_ is highly recommended). I haven't provided one, as depending on your installation method, the location of the files will differ. The code also works on macOS or Linux, so you can install the game in a virtual machine, and process the assets outside of it.
+.. image:: https://i.imgur.com/7GU4b7a.mp4
+   :target: https://imgur.com/7GU4b7a
 
 Currently supported:
 
 - Various versions of the MechWarror 3 base game, including US versions 1.0, 1.1, 1.2, Gold Edition and German version 1.0 and 1.2 (patched). If you are in possession of any other versions, especially the French versions, please get in touch! (The expansion, Pirate's Moon, is not supported.)
-- Sound files (``soundsL.zbd``, ``soundsH.zbd``)
-- All texture and image ``.zbd`` files
-- All messages extracted from ``Mech3Msg.dll`
+- Sound files (``soundsL.zbd``, ``soundsH.zbd``, and loose files installed by patches)
+- All texture and image files (``rimage.zbd``, ``rmechtex*.zbd``, ``rtexture*.zbd``, ``texture*.zbd``)
+- All messages extracted from ``Mech3Msg.dll``
 - 'mech models from ``mechlib.zbd``, as well as the material index
-- Animations (``motion.zbd``) can be extracted, but it isn't currently understood how to apply the data to models correctly
+- Animations (``motion.zbd``) can be extracted and applied to models. This works pretty well, but `some limbs have incorrect translations/locational data <https://github.com/tobywf/mech3ax/issues/2>`_
+- Game engine files (``reader*.zbd``) can be dumped to JSON
 
-Additionally, there is a stand-alone script that can convert extracted models to a ``.blend`` file for the 3D creation suite `Blender`_. It requires Blender 2.80. Blender's APIs do change, so you may need to use a version closely matching that one. It will definitely *not* work with versions below 2.80, but if you have success running it with newer versions, let me know so I can update this README.
+Not supported (yet):
 
-It is a bit tricky to get running, because of the dependencies. Assuming Blender is installed, and you have extracted the models and material index to ``mechlib/``, and ``rmechtex.zbd`` to ``mechtex/``, you can run the script like so:
+- The game engine interpreter file ``interp.zbd``
+- ``gamez.zbd`` files
+- Files from the demo version aren't 100% supported yet, some of the model data have different headers (``mechlib.zbd``)
+- The Pirate's Moon expansions (`GitHub issue <https://github.com/tobywf/mech3ax/issues/1>`_)
+
+Additionally, there is a stand-alone script that can convert extracted models to a ``.blend`` file for the 3D creation suite `Blender`_. Please see `Blender script`_ further down.
+
+.. _Blender: https://www.blender.org/
+
+How to use
+----------
+
+**You will need a copy of the game. Do not ask me for an (illegal) copy.**
+
+Python 3.7 or higher is required.
+
+The various library functions can be used to write a script to extract game assets, or this can be done in an interactive session (in which case, `IPython`_ is highly recommended). I haven't provided one, as depending on your installation method, the location of the files will differ. The code also works on macOS or Linux, so you can install the game in a virtual machine, and process the assets outside of it.
+
+I realise not everybody will know Python, so I have included an example script (``example.py``). The first and only argument is the install location of MechWarrior 3 (containing ``Mech3.exe``). This script is only an example, and completely unsupported. If you run into issues using it, please don't raise an issue until you are sure it's an issue with the underlying library.
+
+A virtual environment is recommended:
+
+.. code-block:: console
+
+    $ python3 -m venv env
+    $ source env/bin/activate
+    $ pip install .
+    $ python3 example.py "<install location here>"
+
+.. _IPython: https://ipython.org/
+
+Blender script
+--------------
+
+Blender 2.80 or higher is required. Blender's APIs do change, so you may need to use a version closely matching that one. It will definitely *not* work with versions below 2.80, but if you have success running it with newer versions, let me know so I can update this README.
+
+This is a bit tricky to get running, because of the dependencies. Assuming Blender is installed, and you have extracted the models and material index to ``mechlib/``, and ``rmechtex.zbd`` to ``mechtex/``, you can run the script like so:
 
 .. code-block:: console
 
@@ -31,7 +64,7 @@ It is a bit tricky to get running, because of the dependencies. Assuming Blender
         --background \
         --factory-startup \
         --python model2blend.py \
-        -- mechlib/mech_madcat.json mechtex/
+        -- mechlib/mech_annihilator.json mechtex/
 
 This also assumes the Blender executable can be found. Your install location may vary, but here's some general instructions. For macOS (and Linux), this can be achieved by an alias in your shell's profile, e.g. ``.bashrc``:
 
@@ -46,9 +79,6 @@ For Windows/PowerShell, you can add an alias to the appropriate ``profile.ps1``:
     New-Alias blender "C:\Program Files\Blender Foundation\Blender\blender.exe"
 
 (The syntax for invoking the script will also be slightly different using PowerShell)
-
-.. _IPython: https://ipython.org/
-.. _Blender: https://www.blender.org/
 
 License
 -------

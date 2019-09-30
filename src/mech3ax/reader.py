@@ -66,13 +66,12 @@ def extract_nodes(zrd):
 
     ret = _read_node(zrd)
     # make sure all the data is processed
-    assert offset >= len(zrd)
+    assert offset >= len(zrd), f"{offset} >= {len(zrd)}"
     return ret
 
 
 def extract_reader(reader_path, base_path):
-    with reader_path.open("rb") as f:
-        data = f.read()
+    data = reader_path.read_bytes()
 
     for name, zrd in extract_archive(data):
         json_path = base_path / name.replace(".zrd", ".json")

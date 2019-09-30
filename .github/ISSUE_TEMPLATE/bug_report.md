@@ -33,8 +33,10 @@ Version x.xx (U.S./Deutsch/Français)
 
 Operating system: <!-- e.g. Windows 10, macOS High Sierra, Ubuntu 18.04 -->
 Python version: <!-- mech3ax requires Python 3.7+ -->
+Blender version: <!-- the Blender script requires Blender 2.80+ -->
 
 - [ ] I'm using a Python version of 3.7 or higher
+- [ ] I'm using a Blender version of 2.80 or higher
 - [ ] I'm using a virtual environment
 
 <!-- Provide information how to reproduce. The exact output would be great! -->

@@ -86,16 +86,16 @@ def _extract_texture(data, start, name):  # pylint: disable=too-many-locals
 
 def extract_textures(data):
     zero1, one, zero2, count, zero3, zero4 = TEXTURE_INFO.unpack_from(data, 0)
-    assert zero1 == 0, "info: zero 1"
-    assert zero2 == 0, "info: zero 2"
-    assert zero3 == 0, "info: zero 3"
-    assert zero4 == 0, "info: zero 4"
-    assert one == 1, "info: one"
+    assert zero1 == 0, f"info: zero 1 {zero1}"
+    assert zero2 == 0, f"info: zero 2 {zero2}"
+    assert zero3 == 0, f"info: zero 3 {zero3}"
+    assert zero4 == 0, f"info: zero 4 {zero4}"
+    assert one == 1, f"info: one {one}"
 
     offset = TEXTURE_INFO.size
     for i in range(count):
         name, start, magic = TEXTURE_RECORD.unpack_from(data, offset)
-        assert magic == 0xFFFFFFFF, f"record: magic {i}"
+        assert magic == 0xFFFFFFFF, f"record: magic {magic} ({i})"
         name = ascii_zterm(name)
         yield name, _extract_texture(data, start, name)
         offset += TEXTURE_RECORD.size
@@ -104,8 +104,7 @@ def extract_textures(data):
 def texture_archives_to_zip(output_file, *archive_paths):
     with ZipFile(output_file, "w") as z:
         for archive_path in archive_paths:
-            with archive_path.open("rb") as f:
-                data = f.read()
+            data = archive_path.read_bytes()
 
             for name, img in extract_textures(data):
                 with BytesIO() as f:

@@ -34,11 +34,11 @@ def _read_mesh_data(
     normals = _read_points(normal_count)
     # 005e88ac "Error reading GameZ Model3D morph vertex data."
     # always seems to be 0, otherwise try _read_points
-    assert morph_count == 0
+    assert morph_count == 0, morph_count
     # 005e8908 "Error reading GameZ Model3D point light data."
     light_count = fields[8]
     # always seems to be 0 in the release code
-    assert light_count == 0
+    assert light_count == 0, light_count
     # if this was not 0, additional data would need to be read
     # 005e8964 "Error reading GameZ Model3D point light data."
 
@@ -56,7 +56,7 @@ def _read_mesh_data(
         # to hold pointers to buffers, but 7 and 8 aren't used in the function
         texture_index = fields[7]
         textures.add(texture_index)
-        assert fields[8] == 0xFFFFFF00
+        assert fields[8] == 0xFFFFFF00, fields[8]
 
         verts_in_poly = fields[0] & 0xFF
 
@@ -133,24 +133,29 @@ def _read_additional_header(data, offset):
     )
     offset += 12 * 11
 
-    assert additional_headers[0] == (40, 0, 0) or additional_headers[0] == (32, 0, 0)
+    assert (
+        additional_headers[0] == (40, 0, 0)
+        or additional_headers[0] == (32, 0, 0)
+        # or additional_headers[0] == (0, 0, 0)  # in the demo?
+    ), additional_headers[0]
     # unused?
-    assert additional_headers[1] == (0.0, 0.0, 0.0)
-    assert additional_headers[8] == (0.0, 0.0, 0.0)
-    assert additional_headers[9] == (0.0, 0.0, 0.0)
-    assert additional_headers[10] == (0.0, 0.0, 0.0)
-    assert additional_headers[11] == (0.0, 0.0, 0.0)
+    assert additional_headers[1] == (0.0, 0.0, 0.0), additional_headers[1]
+    assert additional_headers[8] == (0.0, 0.0, 0.0), additional_headers[8]
+    assert additional_headers[9] == (0.0, 0.0, 0.0), additional_headers[9]
+    assert additional_headers[10] == (0.0, 0.0, 0.0), additional_headers[10]
+    assert additional_headers[11] == (0.0, 0.0, 0.0), additional_headers[11]
 
     # 2 is rotation, all values between (a generously rounded) PI
-    assert all(r > -3.1416 and r < 3.1416 for r in additional_headers[2])
+    assert all(
+        r > -3.1416 and r < 3.1416 for r in additional_headers[2]
+    ), additional_headers[2]
     # 3 could have been intended for scale, and then was optimised out by
     # pre-scaling geometry
-    assert additional_headers[3] == (1.0, 1.0, 1.0)
-    # unknown
-    # assert additional_headers[4] == (1.0, 0.0, -0.0), part_name
-    # assert additional_headers[5] == (-0.0, 1.0, 0.0), part_name
-    # assert additional_headers[6] == (0.0, 0.0, 1.0), part_name
-    # print(part_name, additional_headers[4], additional_headers[5], additional_headers[6])
+    assert additional_headers[3] == (1.0, 1.0, 1.0), additional_headers[3]
+    # unknown - rotation axes?
+    # assert additional_headers[4] == (1.0, 0.0, -0.0), additional_headers[4]
+    # assert additional_headers[5] == (-0.0, 1.0, 0.0), additional_headers[5]
+    # assert additional_headers[6] == (0.0, 0.0, 1.0), additional_headers[6]
     # 7 is location, can be inferred from the large variations (and trial & error)
 
     return offset, additional_headers
@@ -211,10 +216,8 @@ def extract_model(data):
 
     # The first node is always a dummy node. I think this was done to simplify
     # parsing, so the first node could always be allocated with a size of 1.
-    assert (
-        root["name"].endswith(".flt")
-        and len(root["children"]) == 1
-        and root["location"] == (0.0, 0.0, 0.0)
-        and root["rotation"] == (0.0, 0.0, 0.0)
-    )
+    assert root["name"].endswith(".flt"), root["name"]
+    assert len(root["children"]) == 1, root["children"]
+    assert root["location"] == (0.0, 0.0, 0.0), root["location"]
+    assert root["rotation"] == (0.0, 0.0, 0.0), root["rotation"]
     return {"model": root["children"][0], "animations": {}}
