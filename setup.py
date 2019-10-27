@@ -34,7 +34,7 @@ setup(
     zip_safe=True,
     python_requires=">=3.7",
     # remember to update .pre-commit-config.yaml with new requirements
-    install_requires=["Pillow==6.1.0", "pefile==2019.4.18"],
+    install_requires=["Pillow==6.2.0", "pefile==2019.4.18"],
     classifiers=(
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
