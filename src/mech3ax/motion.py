@@ -21,11 +21,11 @@ def parse_motion(motion):  # pylint: disable=too-many-locals
 
     parts = {"frame_count": frame_count}
     for _ in range(part_count):
-        name_size, = unpack_from("<I", motion, offset)
+        (name_size,) = unpack_from("<I", motion, offset)
         offset += 4
         part_name = motion[offset : offset + name_size].decode("ascii")
         offset += name_size
-        twelve, = unpack_from("<I", motion, offset)
+        (twelve,) = unpack_from("<I", motion, offset)
         assert twelve == 12, f"{part_name}: {twelve} == 12"
         offset += 4
         # location

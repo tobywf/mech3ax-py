@@ -29,7 +29,7 @@ def _traverse_resources(entries):
 
 
 def _read_messagetable_resource(data):
-    count, = unpack_from("<I", data, 0)
+    (count,) = unpack_from("<I", data, 0)
     offset = 4
 
     for _ in range(count):

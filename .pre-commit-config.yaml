@@ -4,11 +4,11 @@ repos:
   hooks:
   - id: isort
 - repo: https://github.com/ambv/black
-  rev: stable
+  rev: 19.10b0
   hooks:
   - id: black
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.2.3
+  rev: v2.5.0
   hooks:
   # general (POSIX) text file goodness
   - id: trailing-whitespace
@@ -24,7 +24,7 @@ repos:
     args:
     - --maxkb=20
 - repo: https://github.com/pre-commit/pygrep-hooks
-  rev: v1.4.1
+  rev: v1.5.1
   hooks:
   - id: rst-backticks
   - id: python-check-blanket-noqa
@@ -39,6 +39,6 @@ repos:
     always_run: true
     pass_filenames: false
     additional_dependencies:
-    - pylint==2.3.1
-    - Pillow==6.2.1
+    - pylint==2.4.4
+    - Pillow==6.2.2
     - pefile==2019.4.18

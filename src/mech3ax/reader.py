@@ -12,24 +12,24 @@ def extract_nodes(zrd):
 
     def _read_node(zrd):
         nonlocal offset
-        node_type, = UINT32.unpack_from(zrd, offset)
+        (node_type,) = UINT32.unpack_from(zrd, offset)
         offset += UINT32.size
 
         # uint32
         if node_type == 1:
-            value, = UINT32.unpack_from(zrd, offset)
+            (value,) = UINT32.unpack_from(zrd, offset)
             offset += UINT32.size
             return value
 
         # float
         if node_type == 2:
-            value, = FLOAT.unpack_from(zrd, offset)
+            (value,) = FLOAT.unpack_from(zrd, offset)
             offset += FLOAT.size
             return value
 
         # string
         if node_type == 3:
-            count, = UINT32.unpack_from(zrd, offset)
+            (count,) = UINT32.unpack_from(zrd, offset)
             offset += UINT32.size
             value = zrd[offset : offset + count].decode("ascii")
             offset += count
@@ -37,7 +37,7 @@ def extract_nodes(zrd):
 
         # list
         if node_type == 4:
-            count, = UINT32.unpack_from(zrd, offset)
+            (count,) = UINT32.unpack_from(zrd, offset)
             offset += UINT32.size
 
             # count is one bigger, because in the code this first item
