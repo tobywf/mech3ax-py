@@ -90,15 +90,13 @@ MechWarrior 3 Asset Extractor is GPLv3 licensed. Please see ``LICENSE``.
 Development
 -----------
 
-Python 3.7+ is required. A virtual environment is highly recommended. Simply clone and install in "editable mode" (``--editable``, ``-e``):
+Python 3.7+ is required. Dependency management is done via `poetry`_.
 
-.. code-block:: console
+.. _poetry: https://python-poetry.org/
 
-    $ python3 -m venv env
-    $ source env/bin/activate
-    $ pip install -e .
+`pre-commit`_ is also required. It installs all dependencies necessary for linting and testing. And once installed, it will run when you commit.
 
-`pre-commit`_ is required. It installs all dependencies necessary for linting and testing easily And once installed, it will run when you commit.
+.. _pre-commit: https://pre-commit.com/
 
 .. code-block:: console
 
@@ -109,5 +107,3 @@ It can also be run at any point (without committing changes):
 .. code-block:: console
 
     $ pre-commit run --all-files
-
-.. _pre-commit: https://pre-commit.com/

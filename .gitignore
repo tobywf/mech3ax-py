@@ -126,11 +126,5 @@ dmypy.json
 .DS_Store
 README.html
 *.zip
-sounds/
-textures/
-resources/
-mechlib/
-mechtex/
-*.blend*
-reader/
-rimage/
+output/
+poetry.lock

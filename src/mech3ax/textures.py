@@ -33,8 +33,11 @@ def _extract_texture(data, start, name):  # pylint: disable=too-many-locals
     fmt, width, height, zero, palette_count, stretch = TEXTURE_HEADER.unpack_from(
         data, start
     )
-    assert zero == 0, f"header: zero {name}"
     offset = start + TEXTURE_HEADER.size
+    if zero != 0:
+        raise ValueError(
+            f"Expected field 4 to be 0 for texture {name} (but was {zero})"
+        )
     size = width * height
 
     alpha = None
@@ -86,16 +89,24 @@ def _extract_texture(data, start, name):  # pylint: disable=too-many-locals
 
 def extract_textures(data):
     zero1, one, zero2, count, zero3, zero4 = TEXTURE_INFO.unpack_from(data, 0)
-    assert zero1 == 0, f"info: zero 1 {zero1}"
-    assert zero2 == 0, f"info: zero 2 {zero2}"
-    assert zero3 == 0, f"info: zero 3 {zero3}"
-    assert zero4 == 0, f"info: zero 4 {zero4}"
-    assert one == 1, f"info: one {one}"
+    if zero1 != 0:
+        raise ValueError(f"Expected field 1 to be 0 (but was {zero1})")
+    if one != 1:
+        raise ValueError(f"Expected field 2 to be 1 (but was {one})")
+    if zero2 != 0:
+        raise ValueError(f"Expected field 3 to be 0 (but was {zero2})")
+    if zero3 != 0:
+        raise ValueError(f"Expected field 5 to be 0 (but was {zero3})")
+    if zero4 != 0:
+        raise ValueError(f"Expected field 6 to be 0 (but was {zero4})")
 
     offset = TEXTURE_INFO.size
     for i in range(count):
         name, start, magic = TEXTURE_RECORD.unpack_from(data, offset)
-        assert magic == 0xFFFFFFFF, f"record: magic {magic} ({i})"
+        if magic != 0xFFFFFFFF:
+            raise ValueError(
+                f"Expected record {i} magic to be 0xFFFFFFFF (but was {magic:08X})"
+            )
         name = ascii_zterm(name)
         yield name, _extract_texture(data, start, name)
         offset += TEXTURE_RECORD.size

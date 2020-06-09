@@ -1,4 +1,5 @@
 from struct import Struct
+from warnings import warn
 
 from .archive import extract_archive
 from .utils import json_dump
@@ -66,7 +67,8 @@ def extract_nodes(zrd):
 
     ret = _read_node(zrd)
     # make sure all the data is processed
-    assert offset >= len(zrd), f"{offset} >= {len(zrd)}"
+    if offset < len(zrd):
+        warn("Not all reader data was processed")
     return ret
 
 

@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "mech3ax"
+version = "0.1.1"
+description = "MechWarrior 3 Asset Extractor is a project to extract assets from the 1998 MechWarrior 3 game to modern formats"
+authors = ["Toby Fleming <tobywf@users.noreply.github.com>"]
+license = "GPL-3.0-only"
+readme = "README.rst"
+homepage = "https://github.com/tobywf/mech3ax"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+pefile = "2019.4.18"
+Pillow = "^7.1.2"
+
+[tool.poetry.dev-dependencies]
+
+[tool.isort]
+# see https://black.readthedocs.io/en/stable/the_black_code_style.html
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88
+
+indent = '    '
+combine_as_imports = true
+
+[build-system]
+requires = ["poetry>=1.0.0"]
+build-backend = "poetry.masonry.api"

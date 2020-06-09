@@ -11,10 +11,14 @@ def parse_motion(motion):  # pylint: disable=too-many-locals
     four, unk, frame_count, part_count, minus_one, plus_one = MOTION_HEADER.unpack_from(
         motion, 0
     )
-    assert four == 4, four
-    assert minus_one == -1.0, minus_one
-    assert plus_one == 1.0, plus_one
-    assert unk > 0.0, unk
+    if four != 4:
+        raise ValueError(f"Expected header field 1 to be 4 (but was {four})")
+    if unk <= 0.0:
+        raise ValueError(f"Expected header field 2 greater than 0.0 (but was {unk})")
+    if minus_one != -1.0:
+        raise ValueError(f"Expected header field 5 to be -1.0 (but was {minus_one})")
+    if plus_one != 1.0:
+        raise ValueError(f"Expected header field 6 to be 1.0 (but was {plus_one})")
 
     offset = MOTION_HEADER.size
     frame_count += 1
@@ -26,8 +30,11 @@ def parse_motion(motion):  # pylint: disable=too-many-locals
         part_name = motion[offset : offset + name_size].decode("ascii")
         offset += name_size
         (twelve,) = unpack_from("<I", motion, offset)
-        assert twelve == 12, f"{part_name}: {twelve} == 12"
         offset += 4
+        if twelve != 12:
+            raise ValueError(
+                f"Expected value in part {part_name!r} to be 12 (but was {twelve})"
+            )
         # location
         location_count = frame_count * 3
         location_data = unpack_from(f"<{location_count}f", motion, offset)

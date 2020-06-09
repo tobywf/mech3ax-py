@@ -38,7 +38,8 @@ def _read_messagetable_resource(data):
         for entry_id in range(low_id, high_id):
             length, flags = unpack_from("<2H", data, offset_to_entries)
             # no unicode flags
-            assert flags == 0x0000, flags
+            if flags != 0x0000:
+                raise ValueError(f"Expected no unicode flags (but was {flags:04X})")
             offset_to_entries += 4
             length -= 4
             text = data[offset_to_entries : offset_to_entries + length]
