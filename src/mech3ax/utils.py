@@ -1,11 +1,11 @@
 import json
 
 
-def ascii_zterm(bytestr):
-    null_index = bytestr.find(b"\x00")
+def ascii_zterm(raw):
+    null_index = raw.find(b"\0")
     if null_index > -1:
-        binary = bytestr[:null_index]
-    return binary.decode("ascii")
+        raw = raw[:null_index]
+    return raw.decode("ascii")
 
 
 def json_load(path):

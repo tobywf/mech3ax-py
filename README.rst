@@ -18,10 +18,10 @@ Currently supported
 - 'mech models from ``mechlib.zbd``, as well as the material index
 - Animations (``motion.zbd``) can be extracted and applied to models. This works pretty well, but `some limbs have incorrect translations/locational data <https://github.com/tobywf/mech3ax/issues/2>`_
 - Game engine files (``reader*.zbd``) can be dumped to JSON
+- Interpreter files (``interp.zbd``) can be dumped to JSON
 
 Not supported (yet):
 
-- The game engine interpreter file ``interp.zbd``
 - ``gamez.zbd`` files
 - Files from the demo version aren't 100% supported yet, some of the model data have different headers (``mechlib.zbd``)
 - The Pirate's Moon expansions (`GitHub issue <pm_issue_>`_)
