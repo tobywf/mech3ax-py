@@ -1,9 +1,4 @@
 repos:
-- repo: https://github.com/timothycrosley/isort
-  rev: 4.3.21-2
-  hooks:
-  - id: isort
-    additional_dependencies: ["toml"]
 - repo: https://github.com/ambv/black
   rev: 19.10b0
   hooks:
@@ -31,15 +26,3 @@ repos:
   - id: python-check-blanket-noqa
   - id: python-no-log-warn
   - id: python-no-eval
-- repo: local
-  hooks:
-  - id: pylint
-    name: pylint
-    entry: pylint "src/mech3ax" "model2blend.py"
-    language: python
-    always_run: true
-    pass_filenames: false
-    additional_dependencies:
-    - pylint==2.5.3
-    - Pillow==7.1.2
-    - pefile==2019.4.18

@@ -10,6 +10,10 @@ ALMOST_WHITE = (254.0, 254.0, 254.0)
 def _read_mesh_data(
     data, offset
 ):  # pylint: disable=too-many-locals,too-many-statements
+    # --- WARNING ---
+    # This is really dumb, but the code to read GameZ models is subtly different
+    # --- WARNING ---
+
     def _read_points(count):
         nonlocal offset
         points = []

@@ -20,8 +20,18 @@ classifiers = [
 python = "^3.7"
 pefile = "2019.4.18"
 Pillow = "^7.1.2"
+pydantic = "^1.5.1"
 
 [tool.poetry.dev-dependencies]
+ipython = "^7.15.0"
+black = "^19.10b0"
+mypy = "^0.782"
+isort = {extras = ["pyproject"], version = "^4.3.21"}
+pylint = {extras = ["toml"], version = "^2.5.3"}
+
+[tool.poetry.scripts]
+mech3_from_zbd = "mech3ax.convert.cli:main_from_zbd"
+mech3_to_zbd = "mech3ax.convert.cli:main_to_zbd"
 
 [tool.isort]
 # see https://black.readthedocs.io/en/stable/the_black_code_style.html
@@ -33,6 +43,43 @@ line_length = 88
 
 indent = '    '
 combine_as_imports = true
+
+[tool.pylint.MASTER]
+ignore = "CVS"
+persistent = "yes"
+jobs = "1"
+extension-pkg-whitelist = "pydantic"
+
+[tool.pylint."MESSAGES CONTROL"]
+# bad-continuation,  # clashes with black
+# line-too-long,  # clashes with black
+# ungrouped-imports, # clashes with isort
+# wrong-import-position, # clashes with isort
+# locally-disabled, # i guess this could be useful if somebody has gone insane with suppressions
+# suppressed-message, # oh come on
+# too-few-public-methods, # this one is dumb for dataclasses
+# duplicate-code, # some false positives
+
+enable = "all"
+disable = """
+bad-continuation,
+line-too-long,
+ungrouped-imports,
+wrong-import-position,
+locally-disabled,
+suppressed-message,
+too-few-public-methods,
+duplicate-code,
+chained-comparison,
+missing-docstring,
+fixme,
+"""
+
+[tool.pylint.BASIC]
+good-names = "_,e,ex,f,ft,fb,fp,i,it,j,u,v,x,y,z,uv,tx,ty,tz,rx,ry,rz,bm,pe,T"
+
+[tool.pylint.FORMAT]
+indent-string = "    "
 
 [build-system]
 requires = ["poetry>=1.0.0"]

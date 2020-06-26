@@ -1,17 +1,19 @@
+from pathlib import Path
 from struct import Struct
+from typing import Any
 from warnings import warn
 
-from .archive import extract_archive
+from .archive import read_archive
 from .utils import json_dump
 
 UINT32 = Struct("<I")
 FLOAT = Struct("<f")
 
 
-def extract_nodes(zrd):
+def extract_nodes(zrd: bytes) -> Any:
     offset = 0
 
-    def _read_node(zrd):
+    def _read_node(zrd: bytes) -> Any:
         nonlocal offset
         (node_type,) = UINT32.unpack_from(zrd, offset)
         offset += UINT32.size
@@ -52,7 +54,7 @@ def extract_nodes(zrd):
             if count == 1:
                 return _read_node(zrd)
 
-            values = [_read_node(zrd) for i in range(count)]
+            values: Any = [_read_node(zrd) for i in range(count)]
 
             # special munging to turn a list of keys and values into a dict
             is_even = count % 2 == 0
@@ -72,9 +74,9 @@ def extract_nodes(zrd):
     return ret
 
 
-def extract_reader(reader_path, base_path):
+def extract_reader(reader_path: Path, base_path: Path) -> None:
     data = reader_path.read_bytes()
 
-    for name, zrd in extract_archive(data):
+    for name, zrd, _ in read_archive(data):
         json_path = base_path / name.replace(".zrd", ".json")
         json_dump(json_path, extract_nodes(zrd))

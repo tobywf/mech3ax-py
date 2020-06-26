@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -ex
+
+src=("src/mech3ax" "model2blend.py" "test.py")
+
+if [[ -n "$1" ]]; then
+  ISORT_CHECK="--check-only"
+  BLACK_CHECK="--check"
+else
+  ISORT_CHECK=""
+  BLACK_CHECK=""
+fi
+
+isort --recursive $ISORT_CHECK "${src[@]}"
+black $BLACK_CHECK "${src[@]}"
+mypy "${src[0]}"
+pylint "${src[@]}"

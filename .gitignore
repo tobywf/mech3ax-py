@@ -128,3 +128,4 @@ README.html
 *.zip
 output/
 poetry.lock
+scratch/
