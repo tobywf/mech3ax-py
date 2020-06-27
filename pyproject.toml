@@ -81,6 +81,9 @@ good-names = "_,e,ex,f,ft,fb,fp,i,it,j,u,v,x,y,z,uv,tx,ty,tz,rx,ry,rz,bm,pe,T"
 [tool.pylint.FORMAT]
 indent-string = "    "
 
+[tool.pylint.DESIGN]
+max-locals = 20
+
 [build-system]
 requires = ["poetry>=1.0.0"]
 build-backend = "poetry.masonry.api"

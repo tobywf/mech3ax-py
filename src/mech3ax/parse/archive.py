@@ -10,22 +10,55 @@ writing archives wants to be binary accurate, then entries must be written in a
 duplicate-compatible manner.
 """
 import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from struct import Struct
-from typing import BinaryIO, Iterable, Tuple
+from typing import BinaryIO, Iterable, Optional
 
 from ..errors import Mech3ArchiveError, assert_value
 from .utils import ascii_zterm
 
 TOC_FOOTER = Struct("<2I")
-TOC_ENTRY = Struct("<2I 64s 76s")
+TOC_ENTRY = Struct("<2I 64s I 64s Q")
 
-ENTRIES = Iterable[Tuple[str, bytes, bytes]]
 VERSION = 1
+WINDOWS_EPOCH = datetime(1601, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc)
 
 LOG = logging.getLogger(__name__)
 
 
-def read_archive(data: bytes) -> ENTRIES:
+@dataclass
+class ArchiveEntry:
+    name: str
+    start: int
+    data: bytes
+    flag: int
+    comment: bytes
+    write_time: Optional[datetime]
+
+
+def filetime_to_datetime(filetime: int, offset: int) -> Optional[datetime]:
+    if filetime == 0:
+        return None
+
+    micro, nano100 = divmod(filetime, 10)
+    # python cannot store anything less than microseconds, so if this is set,
+    # then we panic instead of losing data
+    assert_value("100 nanoseconds", 0, nano100, offset)
+
+    delta = timedelta(microseconds=micro)
+    return WINDOWS_EPOCH + delta
+
+
+def datetime_to_filetime(timestamp: Optional[datetime]) -> int:
+    if not timestamp:
+        return 0
+
+    delta = timestamp - WINDOWS_EPOCH
+    return (delta // timedelta.resolution) * 10
+
+
+def read_archive(data: bytes) -> Iterable[ArchiveEntry]:
     LOG.debug("Reading archive data...")
     offset = len(data) - TOC_FOOTER.size
     version, count = TOC_FOOTER.unpack_from(data, offset)
@@ -37,30 +70,42 @@ def read_archive(data: bytes) -> ENTRIES:
 
     for i in range(count):
         LOG.debug("Reading entry %d at %d", i, offset)
-        start, length, raw_name, garbage = TOC_ENTRY.unpack_from(data, offset)
+        start, length, raw_name, flag, comment, filetime = TOC_ENTRY.unpack_from(
+            data, offset
+        )
         offset += TOC_ENTRY.size
+        write_time = filetime_to_datetime(filetime, offset - 4)
         name = ascii_zterm(raw_name)
         end = start + length
         LOG.debug("Entry '%s', data from %d to %d", name, start, end)
-        yield name, data[start : start + length], garbage
+        yield ArchiveEntry(name, start, data[start:end], flag, comment, write_time)
 
     LOG.debug("Read archive data")
 
 
-def write_archive(f: BinaryIO, entries: ENTRIES) -> None:
+def write_archive(f: BinaryIO, entries: Iterable[ArchiveEntry]) -> None:
     LOG.debug("Writing archive data...")
     toc = []
     offset = 0
-    for name, data, garbage in entries:
-        length = len(data)
-        LOG.debug("Entry '%s', data from %d to %d", name, offset, offset + length)
-        toc.append(TOC_ENTRY.pack(offset, length, name.encode("ascii"), garbage))
-        f.write(data)
+    for entry in entries:
+        length = len(entry.data)
+        LOG.debug("Entry '%s', data from %d to %d", entry.name, offset, offset + length)
+        filetime = datetime_to_filetime(entry.write_time)
+        entry_packed = TOC_ENTRY.pack(
+            offset,
+            length,
+            entry.name.encode("ascii"),
+            entry.flag,
+            entry.comment,
+            filetime,
+        )
+        toc.append(entry_packed)
+        f.write(entry.data)
         offset += length
 
-    for i, entry in enumerate(toc):
+    for i, entry_packed in enumerate(toc):
         LOG.debug("Writing entry %d at %d", i, offset)
-        f.write(entry)
+        f.write(entry_packed)
         offset += TOC_ENTRY.size
 
     count = len(toc)

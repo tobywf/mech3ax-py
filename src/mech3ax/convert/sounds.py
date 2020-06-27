@@ -5,47 +5,13 @@ The conversion is lossless and produces a binary accurate output by default.
 import logging
 from argparse import Namespace, _SubParsersAction
 from pathlib import Path
-from typing import List, Set
 from zipfile import ZipFile
 
-from pydantic import BaseModel
-
 from ..parse.archive import read_archive, write_archive
-from .utils import Base64, dir_exists, output_resolve, path_exists
-
-MANIFEST = "manifest.json"
+from .archive import MANIFEST, ArchiveInfo, ArchiveManifest, Renamer
+from .utils import dir_exists, output_resolve, path_exists
 
 LOG = logging.getLogger(__name__)
-
-
-class SoundInfo(BaseModel):
-    name: str
-    rename: str
-    garbage: Base64
-
-
-class SoundManifest(BaseModel):
-    class Config:
-        json_encoders = {bytes: Base64.to_str}
-
-    __root__: List[SoundInfo]
-
-
-class Renamer:
-    """Rename duplicates"""
-
-    def __init__(self) -> None:
-        self._names: Set[str] = set()
-
-    def __call__(self, name: str) -> str:
-        basename = Path(name)
-        i = 1
-        while name in self._names:
-            name = f"{basename.stem}_{i}{basename.suffix}"
-            i += 1
-
-        self._names.add(name)
-        return name
 
 
 def sounds_zbd_to_zip(
@@ -57,36 +23,34 @@ def sounds_zbd_to_zip(
         sounds = []
 
         data = input_zbd.read_bytes()
-        for name, filedata, garbage in read_archive(data):
-            rename = renamer(name)
-            z.writestr(rename, filedata)
-            info = SoundInfo(name=name, rename=rename, garbage=garbage)
-            sounds.append(info)
+        for entry in read_archive(data):
+            rename = renamer(entry.name)
+            z.writestr(rename, entry.data)
+            sounds.append(ArchiveInfo.from_entry(entry, rename))
+        end = len(data)
         data = None  # type: ignore
 
         if include_loose:
             base_path = input_zbd.parent
-            for path in base_path.glob("*.wav"):
+            for i, path in enumerate(base_path.glob("*.wav")):
                 name = path.name
                 LOG.debug("Including loose sound file '%s'", name)
 
                 rename = renamer(name)
                 z.writestr(rename, path.read_bytes())
-                info = SoundInfo(name=path.name, rename=rename, garbage=b"")
+                info = ArchiveInfo(name=path.name, rename=rename, start=end + i)
                 sounds.append(info)
 
-        manifest = SoundManifest(__root__=sounds)
-        z.writestr(MANIFEST, manifest.json(indent=2))
+        manifest = ArchiveManifest(__root__=sounds)
+        z.writestr(MANIFEST, manifest.json(exclude_defaults=True, indent=2))
 
 
 def sounds_zip_to_zbd(input_zip: Path, output_zbd: Path) -> None:
     with ZipFile(input_zip, "r") as z:
         with z.open(MANIFEST, "r") as ft:
-            manifest = SoundManifest.parse_raw(ft.read())
+            manifest = ArchiveManifest.parse_raw(ft.read())
 
-        entries = iter(
-            (info.name, z.read(info.rename), info.garbage) for info in manifest.__root__
-        )
+        entries = iter(info.to_entry(z.read(info.rename)) for info in manifest.__root__)
 
         with output_zbd.open("wb") as fb:
             write_archive(fb, entries)

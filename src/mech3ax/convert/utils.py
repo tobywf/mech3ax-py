@@ -1,30 +1,7 @@
 import json
-from base64 import b64decode, b64encode
 from logging.config import dictConfig
 from pathlib import Path
-from typing import Any, Callable, Generator, Optional, Union
-
-CallableGenerator = Generator[Callable[..., Any], None, None]
-
-
-class Base64(bytes):
-    @classmethod
-    def __get_validators__(cls) -> CallableGenerator:
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: Union[str, bytes, None]) -> Optional[bytes]:
-        if value is None:
-            return None
-        if isinstance(value, bytes):
-            return value
-        if isinstance(value, str):
-            return b64decode(value)
-        raise TypeError("bytes or string required")
-
-    @staticmethod
-    def to_str(value: bytes) -> str:
-        return b64encode(value).decode("ascii")
+from typing import Any, Optional
 
 
 def json_dump(path: Path, obj: Any, sort_keys: bool = False) -> None:

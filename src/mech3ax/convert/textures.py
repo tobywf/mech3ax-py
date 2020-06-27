@@ -13,7 +13,8 @@ from PIL import Image
 from pydantic import BaseModel
 
 from ..parse.textures import DecodedTexture, TextureFlag, read_textures, write_textures
-from .utils import Base64, dir_exists, output_resolve, path_exists
+from .archive import Base64
+from .utils import dir_exists, output_resolve, path_exists
 
 MANIFEST = "manifest.json"
 

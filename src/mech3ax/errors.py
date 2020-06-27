@@ -34,10 +34,10 @@ def assert_value(
     name: str,
     expected: T,
     actual: T,
-    offset: Union[int, str],
+    location: Union[int, str],
     error_class: Type[Mech3Error] = Mech3ParseError,
 ) -> None:
     if actual != expected:
         raise error_class(
-            f"Expected {name} to be {expected!r}, but was {actual!r} (at {offset})"
+            f"Expected {name} to be {expected!r}, but was {actual!r} (at {location})"
         )

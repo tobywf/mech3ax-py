@@ -13,7 +13,7 @@ Obviously, this is an unofficial fan effort and not connected to the developers 
 - Interpreter files (`interp.zbd`) can be converted binary-accurately
 - All texture and image files (`rimage.zbd`, `rmechtex*.zbd`, `rtexture*.zbd`, `texture*.zbd`) can be converted binary-accurately
 - All messages extracted from `Mech3Msg.dll`
-- Game engine files (`reader*.zbd`) can be dumped to JSON
+- Game engine files (`reader*.zbd`) can be converted binary-accurately
 - 'mech models from `mechlib.zbd`, as well as the material index
 - Animations (`motion.zbd`) can be extracted and applied to models. This works pretty well, but [some limbs have incorrect translations/locational data](https://github.com/tobywf/mech3ax/issues/2)
 
@@ -56,6 +56,10 @@ poetry run mech3_from_zbd textures "original/zbd/c1/texture1.zbd" "c1-texture1.z
 poetry run mech3_to_zbd textures "c1-texture1.zip" "c1-texture1.zbd"
 # the files should be the same
 cmp "original/zbd/c1/texture1.zbd" "c1-texture1.zbd"
+poetry run mech3_from_zbd reader "original/zbd/reader.zbd" "reader.zip"
+poetry run mech3_to_zbd reader "reader.zip" "reader.zbd"
+# the files should be the same
+cmp "original/zbd/reader.zbd" "reader.zbd"
 ```
 
 I'm still working on adding more formats to this CLI.

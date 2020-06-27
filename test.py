@@ -4,6 +4,7 @@ from logging.config import dictConfig
 from pathlib import Path
 
 from mech3ax.convert.interp import interp_json_to_zbd, interp_zbd_to_json
+from mech3ax.convert.reader import reader_zbd_to_zip, reader_zip_to_zbd
 from mech3ax.convert.resources import messages_dll_to_json
 from mech3ax.convert.sounds import sounds_zbd_to_zip, sounds_zip_to_zbd
 from mech3ax.convert.textures import textures_zbd_to_zip, textures_zip_to_zbd
@@ -106,6 +107,29 @@ class Tester:
                 else:
                     compare(input_zbd, output_zbd)
 
+    def test_reader(self) -> None:
+        print("--- READER ---")
+        for name, zbd_dir, output_base in self.versions:
+            output_dir = output_base / "reader"
+            output_dir.mkdir(exist_ok=True)
+
+            for input_zbd in sorted(zbd_dir.rglob("reader*.zbd")):
+                rel_path = input_zbd.relative_to(zbd_dir)
+                mission = rel_path.parent.name
+                if not mission:
+                    zip_name = f"{input_zbd.stem}.zip"
+                    zbd_name = f"{input_zbd.stem}.zbd"
+                else:
+                    zip_name = f"{mission}-{input_zbd.stem}.zip"
+                    zbd_name = f"{mission}-{input_zbd.stem}.zbd"
+
+                zip_path = output_dir / zip_name
+                output_zbd = output_dir / zbd_name
+                print(name, mission, input_zbd.name)
+                reader_zbd_to_zip(input_zbd, zip_path)
+                reader_zip_to_zbd(zip_path, output_zbd)
+                compare(input_zbd, output_zbd)
+
 
 def configure_logging() -> None:
     dictConfig(
@@ -164,6 +188,7 @@ def main():
     # tester.test_interp()
     # tester.test_resources()
     # tester.test_textures()
+    tester.test_reader()
 
 
 if __name__ == "__main__":
