@@ -6,11 +6,13 @@ from typing import BinaryIO, Iterable, Sequence, Tuple
 
 from pydantic import BaseModel
 
-from ..errors import Mech3ParseError, assert_value, assert_value_plain
+from ..errors import Mech3ParseError, assert_eq
 from .utils import UINT32, ascii_zterm
 
 INTERP_HEADER = Struct("<3I")
 INTERP_ENTRY = Struct("<120s 2I")
+assert INTERP_ENTRY.size == 128, INTERP_ENTRY.size
+
 SIGNATURE = 0x08971119
 VERSION = 7
 
@@ -37,8 +39,8 @@ def _read_script_lines(data: bytes, offset: int) -> Tuple[Sequence[str], int]:
         offset += UINT32.size
 
         command = data[offset : offset + size].decode("ascii")
-        assert_value("argument count", arg_count, command.count("\0"), offset)
-        assert_value("command end", "\0", command[-1], offset)
+        assert_eq("argument count", arg_count, command.count("\0"), offset)
+        assert_eq("command end", "\0", command[-1], offset)
         if " " in command:
             raise Mech3ParseError(
                 f"Expected command to not contain spaces (at {offset})"
@@ -55,8 +57,8 @@ def read_interp(data: bytes) -> Iterable[Script]:
     LOG.debug(
         "Interp signature 0x%08x, version %d, count %d", signature, version, count
     )
-    assert_value_plain("signature", SIGNATURE, signature)
-    assert_value_plain("version", VERSION, version)
+    assert_eq("signature", SIGNATURE, signature, 0)
+    assert_eq("version", VERSION, version, 4)
 
     offset = INTERP_HEADER.size
     script_info = []
@@ -75,11 +77,11 @@ def read_interp(data: bytes) -> Iterable[Script]:
             start,
             timestamp.isoformat(),
         )
-        assert_value_plain("offset", start, offset)
+        assert_eq("offset", start, offset, name)
         lines, offset = _read_script_lines(data, offset)
         yield Script(name=name, timestamp=timestamp, lines=lines)
 
-    assert_value_plain("offset", len(data), offset)
+    assert_eq("offset", len(data), offset, name)
     LOG.debug("Read interpreter data")
 
 

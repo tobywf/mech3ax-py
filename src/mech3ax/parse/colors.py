@@ -3,7 +3,7 @@ from typing import Sequence
 
 from PIL import Image
 
-from ..errors import Mech3TextureError, assert_value
+from ..errors import Mech3TextureError, assert_eq
 
 LOG = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ def rgb_to_palette(img: Image, palette: bytes, name: str) -> bytes:
     :raises Mech3TextureError: if the palette contains duplicate colors
     :raises Mech3TextureError: if the palette does not contain a color in the image
     """
-    assert_value("image mode", "RGB", img.mode, name, Mech3TextureError)
+    assert_eq("image mode", "RGB", img.mode, name, Mech3TextureError)
 
     rgb_to_index = {}
     it = iter(palette)

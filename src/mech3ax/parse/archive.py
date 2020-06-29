@@ -15,11 +15,12 @@ from datetime import datetime, timedelta, timezone
 from struct import Struct
 from typing import BinaryIO, Iterable, Optional
 
-from ..errors import Mech3ArchiveError, assert_value
+from ..errors import Mech3ArchiveError, assert_eq
 from .utils import ascii_zterm
 
 TOC_FOOTER = Struct("<2I")
 TOC_ENTRY = Struct("<2I 64s I 64s Q")
+assert TOC_ENTRY.size == 148, TOC_ENTRY.size
 
 VERSION = 1
 WINDOWS_EPOCH = datetime(1601, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc)
@@ -44,7 +45,7 @@ def filetime_to_datetime(filetime: int, offset: int) -> Optional[datetime]:
     micro, nano100 = divmod(filetime, 10)
     # python cannot store anything less than microseconds, so if this is set,
     # then we panic instead of losing data
-    assert_value("100 nanoseconds", 0, nano100, offset)
+    assert_eq("100 nanoseconds", 0, nano100, offset)
 
     delta = timedelta(microseconds=micro)
     return WINDOWS_EPOCH + delta
@@ -63,7 +64,7 @@ def read_archive(data: bytes) -> Iterable[ArchiveEntry]:
     offset = len(data) - TOC_FOOTER.size
     version, count = TOC_FOOTER.unpack_from(data, offset)
     LOG.debug("Archive version %d, count %d at %d", version, count, offset)
-    assert_value("archive version", VERSION, version, offset, Mech3ArchiveError)
+    assert_eq("archive version", VERSION, version, offset, Mech3ArchiveError)
 
     # the engine reads the TOC forward
     offset -= TOC_ENTRY.size * count

@@ -1,4 +1,4 @@
-from typing import Type, TypeVar, Union
+from typing import Container, Type, TypeVar, Union
 
 T = TypeVar("T")
 
@@ -23,14 +23,7 @@ class Mech3TextureError(Mech3Error):
     """An error when writing a texture."""
 
 
-def assert_value_plain(
-    name: str, expected: T, actual: T, error_class: Type[Mech3Error] = Mech3ParseError
-) -> None:
-    if actual != expected:
-        raise error_class(f"Expected {name} to be {expected!r}, but was {actual!r}")
-
-
-def assert_value(
+def assert_eq(
     name: str,
     expected: T,
     actual: T,
@@ -40,4 +33,17 @@ def assert_value(
     if actual != expected:
         raise error_class(
             f"Expected {name} to be {expected!r}, but was {actual!r} (at {location})"
+        )
+
+
+def assert_in(
+    name: str,
+    expected: Container[T],
+    actual: T,
+    location: Union[int, str],
+    error_class: Type[Mech3Error] = Mech3ParseError,
+) -> None:
+    if actual not in expected:
+        raise error_class(
+            f"Expected {name} to be one of {expected!r}, but was {actual!r} (at {location})"
         )

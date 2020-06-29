@@ -6,7 +6,7 @@ from typing import Any, Iterable, Mapping, Optional, Sequence, Tuple
 
 import pefile
 
-from ..errors import assert_value
+from ..errors import Mech3ParseError, assert_eq
 
 
 class LocaleID(IntEnum):
@@ -58,7 +58,7 @@ def _read_messagetable_resource(data: bytes) -> Iterable[Tuple[int, str]]:
         offset += 12
         for entry_id in range(low_id, high_id):
             length, flags = unpack_from("<2H", data, offset_to_entries)
-            assert_value("no unicode flags", 0x0000, flags, offset_to_entries)
+            assert_eq("unicode flags", 0x0000, flags, offset_to_entries)
             offset_to_entries += 4
             length -= 4
 
@@ -84,7 +84,7 @@ def _extract_zlocids(dll: pefile.PE) -> Iterable[Tuple[str, int]]:
             section for section in dll.sections if section.Name.startswith(b".data\x00")
         )
     except StopIteration:
-        raise ValueError("No .data section found in PE file") from None
+        raise Mech3ParseError("No .data section found in PE file") from None
 
     offset = data_section.PointerToRawData
     length = data_section.SizeOfRawData

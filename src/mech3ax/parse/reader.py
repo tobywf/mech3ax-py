@@ -3,7 +3,7 @@ from enum import IntEnum
 from struct import Struct
 from typing import Any, BinaryIO, Sequence
 
-from ..errors import Mech3ParseError, assert_value_plain
+from ..errors import Mech3ParseError, assert_eq
 from .utils import UINT32
 
 FLOAT = Struct("<f")
@@ -72,7 +72,7 @@ def read_reader(data: bytes) -> Any:
 
     root = _read_node()
     # make sure all the data is processed
-    assert_value_plain("reader end", len(data), offset)
+    assert_eq("reader end", len(data), offset, offset)
     LOG.debug("Read reader data")
     return root
 
@@ -137,7 +137,7 @@ def write_reader(f: BinaryIO, root: Any) -> int:
             _write_list([])
         else:
             raise Mech3ParseError(
-                f"Expected valid node type, but was {type(node)} (at {offset})"
+                f"Expected node type to be compatible, but was {type(node)} (at {offset})"
             )
 
     _write_node(root)

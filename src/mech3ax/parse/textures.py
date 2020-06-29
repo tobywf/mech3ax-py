@@ -12,15 +12,18 @@ from ..errors import (
     Mech3InternalError,
     Mech3ParseError,
     Mech3TextureError,
-    assert_value,
-    assert_value_plain,
+    assert_eq,
+    assert_in,
 )
 from .colors import rgb565to888, rgb888to565, rgb_to_palette, simple_alpha565
 from .utils import ascii_zterm
 
 TEX_HEADER = Struct("<6I")
+assert TEX_HEADER.size == 24, TEX_HEADER.size
 TEX_ENTRY = Struct("<32s Ii")
+assert TEX_ENTRY.size == 40, TEX_ENTRY.size
 TEX_INFO = Struct("<I 2H I 2H")
+assert TEX_INFO.size == 16, TEX_INFO.size
 
 LOG = logging.getLogger(__name__)
 
@@ -84,27 +87,24 @@ def stretch_img(img: Image, stretch: int) -> Image:
         return img.resize((img.width, img.height * 2), resample=Image.BICUBIC)
     if stretch == 3:
         return img.resize((img.width * 2, img.height * 2), resample=Image.BICUBIC)
-    raise ValueError("stretch")
+    raise Mech3InternalError("stretch")
 
 
 def _validate_texture_info(
     offset: int, flag: int, zero: int, stretch: int
 ) -> TextureFlag:
-    assert_value("field 4", 0, zero, offset)
-    if stretch >= 4:
-        raise Mech3ParseError(
-            f"Expected stretch to be < 4, but was {stretch} (at {offset})"
-        )
+    assert_eq("field 4", 0, zero, offset)
+    assert_in("stretch", (0, 1, 2, 3), stretch, offset)
 
     try:
         flag = TextureFlag.check(flag)
     except ValueError as e:
         raise Mech3ParseError(
-            f"Expected valid flag, but was {flag:02X} (at {offset})"
+            f"Expected flag to be valid, but was {flag:02X} (at {offset})"
         ) from e
 
     # one byte per pixel support isn't implemented
-    assert_value(
+    assert_eq(
         "2 bytes per pixel",
         True,
         TextureFlag.BytesPerPixels2(flag),
@@ -113,7 +113,7 @@ def _validate_texture_info(
     )
 
     # global palette support isn't implemented
-    assert_value(
+    assert_eq(
         "use global palette",
         False,
         TextureFlag.UseGlobalPalette(flag),
@@ -163,12 +163,12 @@ def _read_texture(  # pylint: disable=too-many-locals
     else:
         image_data = data[offset : offset + size]
         in_range = all(index < palette_count for index in image_data)
-        assert_value(
+        assert_eq(
             "image data (palette) in range", True, in_range, offset, Mech3TextureError
         )
         # if a palette image has simple alpha, then it would have to be constructed
         # after the palette data is loaded. however, this never seems to happen
-        assert_value(
+        assert_eq(
             "has simple alpha", False, has_simple_alpha, offset, Mech3TextureError,
         )
         offset += size
@@ -227,12 +227,12 @@ def read_textures(data: bytes, do_stretch: bool = True) -> Iterable[DecodedTextu
         zero3,
     )
 
-    assert_value("field 1", 0, zero1, 0)
-    assert_value("has entries", 1, has_entries, 4)
+    assert_eq("field 1", 0, zero1, 0)
+    assert_eq("has entries", 1, has_entries, 4)
     # global palette support isn't implemented
-    assert_value("global palette count", 0, global_palette_count, 8)
-    assert_value("field 5", 0, zero2, 16)
-    assert_value("field 6", 0, zero3, 20)
+    assert_eq("global palette count", 0, global_palette_count, 8)
+    assert_eq("field 5", 0, zero2, 16)
+    assert_eq("field 6", 0, zero3, 20)
 
     offset = TEX_HEADER.size
     table = []
@@ -241,12 +241,12 @@ def read_textures(data: bytes, do_stretch: bool = True) -> Iterable[DecodedTextu
         name, start, palette_index = TEX_ENTRY.unpack_from(data, offset)
         offset += TEX_ENTRY.size
         # global palette support isn't implemented
-        assert_value("global palette index", -1, palette_index, offset - 4)
+        assert_eq("global palette index", -1, palette_index, offset - 4)
         name = ascii_zterm(name)
         table.append((name, start))
 
     for name, start in table:
-        assert_value_plain("offset", start, offset)
+        assert_eq("offset", start, offset, name)
         texture, offset = _read_texture(data, name, offset, do_stretch)
         yield texture
 
@@ -265,7 +265,7 @@ def _convert_textures(
 
     palette_data: Optional[bytes] = None
     if has_palette:
-        assert_value(
+        assert_eq(
             "has palette data",
             True,
             texture.palette_data is not None,
@@ -274,33 +274,33 @@ def _convert_textures(
         )
 
         if TextureFlag.FullAlpha(texture.flag):
-            assert_value("image mode", "RGBA", mode, name, Mech3TextureError)
+            assert_eq("image mode", "RGBA", mode, name, Mech3TextureError)
             palette = cast(bytes, texture.palette_data)
             image_data = rgb_to_palette(img, palette, name)
             palette_data = rgb888to565(palette)
         else:
-            assert_value("image mode", "P", mode, name, Mech3TextureError)
+            assert_eq("image mode", "P", mode, name, Mech3TextureError)
             image_data = img.tobytes()
 
             # PIL always returns 256 palette entries
             component_count = texture.palette_count * 3
             palette = img.getpalette()
-            assert_value(
+            assert_eq(
                 "PIL palette size", 256 * 3, len(palette), name, Mech3InternalError
             )
             real_palette = palette[:component_count]
             palette_data = rgb888to565(real_palette)
 
         in_range = all(index < texture.palette_count for index in image_data)
-        assert_value(
+        assert_eq(
             "image data (palette) in range", True, in_range, name, Mech3InternalError,
         )
     else:
         expected_mode = "RGBA" if TextureFlag.HasAlpha(texture.flag) else "RGB"
-        assert_value("image mode", expected_mode, mode, name, Mech3TextureError)
+        assert_eq("image mode", expected_mode, mode, name, Mech3TextureError)
 
         image_data = rgb888to565(img.tobytes())
-        assert_value(
+        assert_eq(
             "image data length", size * 2, len(image_data), name, Mech3InternalError
         )
 
@@ -313,7 +313,7 @@ def write_textures(f: BinaryIO, textures: Iterable[DecodedTexture]) -> None:
         mode = texture.image.mode
         LOG.debug("Encoding texture %d '%s' (%s)", i, texture.name, mode)
 
-        assert_value(
+        assert_eq(
             "2 bytes per pixel",
             True,
             TextureFlag.BytesPerPixels2(texture.flag),
@@ -371,7 +371,7 @@ def _write_encoded_textures(f: BinaryIO, encoded: Sequence[EncodedTexture]) -> N
 
         has_palette = texture.palette_count != 0
         length = size if has_palette else size * 2
-        assert_value(
+        assert_eq(
             "image data length",
             length,
             len(texture.image_data),
@@ -381,7 +381,7 @@ def _write_encoded_textures(f: BinaryIO, encoded: Sequence[EncodedTexture]) -> N
         offset += length
 
         has_full_alpha = TextureFlag.FullAlpha(texture.flag)
-        assert_value(
+        assert_eq(
             "has alpha data",
             has_full_alpha,
             texture.alpha_data is not None,
@@ -389,7 +389,7 @@ def _write_encoded_textures(f: BinaryIO, encoded: Sequence[EncodedTexture]) -> N
             Mech3TextureError,
         )
         if has_full_alpha:
-            assert_value(
+            assert_eq(
                 "alpha data length",
                 size,
                 len(cast(bytes, texture.alpha_data)),
@@ -398,7 +398,7 @@ def _write_encoded_textures(f: BinaryIO, encoded: Sequence[EncodedTexture]) -> N
             )
             offset += size
 
-        assert_value(
+        assert_eq(
             "has palette data",
             has_palette,
             texture.palette_data is not None,
@@ -407,7 +407,7 @@ def _write_encoded_textures(f: BinaryIO, encoded: Sequence[EncodedTexture]) -> N
         )
         if has_palette:
             length = texture.palette_count * 2
-            assert_value(
+            assert_eq(
                 "palette data length",
                 length,
                 len(cast(bytes, texture.palette_data)),
