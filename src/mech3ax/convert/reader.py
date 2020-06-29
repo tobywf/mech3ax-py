@@ -33,7 +33,7 @@ def reader_zbd_to_zip(input_zbd: Path, output_zip: Path) -> None:
         data = None  # type: ignore
 
         manifest = ArchiveManifest(__root__=readers)
-        z.writestr(MANIFEST, manifest.json(indent=2))
+        z.writestr(MANIFEST, manifest.json(exclude_defaults=True, indent=2))
 
 
 def reader_zip_to_zbd(input_zip: Path, output_zbd: Path) -> None:

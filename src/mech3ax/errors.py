@@ -23,6 +23,10 @@ class Mech3TextureError(Mech3Error):
     """An error when writing a texture."""
 
 
+class Mech3MaterialError(Mech3Error):
+    """An error when writing a texture."""
+
+
 def assert_eq(
     name: str,
     expected: T,

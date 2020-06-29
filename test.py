@@ -4,6 +4,7 @@ from logging.config import dictConfig
 from pathlib import Path
 
 from mech3ax.convert.interp import interp_json_to_zbd, interp_zbd_to_json
+from mech3ax.convert.mechlib import mechlib_zbd_to_zip, mechlib_zip_to_zbd
 from mech3ax.convert.reader import reader_zbd_to_zip, reader_zip_to_zbd
 from mech3ax.convert.resources import messages_dll_to_json
 from mech3ax.convert.sounds import sounds_zbd_to_zip, sounds_zip_to_zbd
@@ -39,34 +40,31 @@ class Tester:
     def test_sounds(self) -> None:
         print("--- SOUNDS ---")
         for name, zbd_dir, output_base in self.versions:
-            output_dir = output_base / "sounds"
-            output_dir.mkdir(exist_ok=True)
-
             print(name, "soundsL.zbd")
             input_zbd = zbd_dir / "soundsL.zbd"
-            sounds_zbd_to_zip(input_zbd, output_dir / "soundsL.zip")
-            output_zbd = output_dir / "soundsL.zbd"
-            sounds_zip_to_zbd(output_dir / "soundsL.zip", output_zbd)
+            zip_path = output_base / "soundsL.zip"
+            output_zbd = output_base / "soundsL.zbd"
+            sounds_zbd_to_zip(input_zbd, zip_path)
+            sounds_zip_to_zbd(zip_path, output_zbd)
             compare(input_zbd, output_zbd)
 
             print(name, "soundsH.zbd")
             input_zbd = zbd_dir / "soundsH.zbd"
-            sounds_zbd_to_zip(input_zbd, output_dir / "soundsH.zip")
-            output_zbd = output_dir / "soundsH.zbd"
-            sounds_zip_to_zbd(output_dir / "soundsH.zip", output_zbd)
+            zip_path = output_base / "soundsH.zip"
+            output_zbd = output_base / "soundsH.zbd"
+            sounds_zbd_to_zip(input_zbd, zip_path)
+            sounds_zip_to_zbd(zip_path, output_zbd)
             compare(input_zbd, output_zbd)
 
     def test_interp(self) -> None:
         print("--- INTERP ---")
         for name, zbd_dir, output_base in self.versions:
-            output_dir = output_base / "interp"
-            output_dir.mkdir(exist_ok=True)
-
             print(name, "interp.zbd")
             input_zbd = zbd_dir / "interp.zbd"
-            interp_zbd_to_json(input_zbd, output_dir / "interp.json")
-            output_zbd = output_dir / "interp.zbd"
-            interp_json_to_zbd(output_dir / "interp.json", output_zbd)
+            zip_path = output_base / "interp.json"
+            output_zbd = output_base / "interp.zbd"
+            interp_zbd_to_json(input_zbd, zip_path)
+            interp_json_to_zbd(zip_path, output_zbd)
             compare(input_zbd, output_zbd)
 
     def test_resources(self) -> None:
@@ -78,6 +76,7 @@ class Tester:
             input_dll = zbd_dir.parent / "Mech3Msg.dll"
             output_json = output_base / "Mech3Msg.json"
             messages_dll_to_json(input_dll, output_json, locale_id)
+            # can't convert back to a DLL
 
     def test_textures(self) -> None:
         print("--- INTERP ---")
@@ -129,6 +128,17 @@ class Tester:
                 reader_zbd_to_zip(input_zbd, zip_path)
                 reader_zip_to_zbd(zip_path, output_zbd)
                 compare(input_zbd, output_zbd)
+
+    def test_mechlib(self) -> None:
+        print("--- MECHLIB ---")
+        for name, zbd_dir, output_base in self.versions[:1]:
+            print(name, "mechlib.zbd")
+            input_zbd = zbd_dir / "mechlib.zbd"
+            zip_path = output_base / "mechlib.zip"
+            output_zbd = output_base / "mechlib.zbd"
+            mechlib_zbd_to_zip(input_zbd, zip_path)
+            mechlib_zip_to_zbd(zip_path, output_zbd)
+            compare(input_zbd, output_zbd)
 
 
 def configure_logging() -> None:
@@ -188,7 +198,8 @@ def main():
     # tester.test_interp()
     # tester.test_resources()
     # tester.test_textures()
-    tester.test_reader()
+    # tester.test_reader()
+    tester.test_mechlib()
 
 
 if __name__ == "__main__":

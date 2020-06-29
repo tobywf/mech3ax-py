@@ -13,7 +13,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from struct import Struct
-from typing import BinaryIO, Iterable, Optional
+from typing import BinaryIO, Iterable, Union
 
 from ..errors import Mech3ArchiveError, assert_eq
 from .utils import ascii_zterm
@@ -22,6 +22,8 @@ TOC_FOOTER = Struct("<2I")
 TOC_ENTRY = Struct("<2I 64s I 64s Q")
 assert TOC_ENTRY.size == 148, TOC_ENTRY.size
 
+# WARNING: the order is important, so Pydantic doesn't convert int -> datetime
+Filetime = Union[int, datetime]
 VERSION = 1
 WINDOWS_EPOCH = datetime(1601, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc)
 
@@ -35,24 +37,29 @@ class ArchiveEntry:
     data: bytes
     flag: int
     comment: bytes
-    write_time: Optional[datetime]
+    write_time: Filetime
 
 
-def filetime_to_datetime(filetime: int, offset: int) -> Optional[datetime]:
+def filetime_to_datetime(filetime: int) -> Filetime:
     if filetime == 0:
-        return None
+        return WINDOWS_EPOCH
 
     micro, nano100 = divmod(filetime, 10)
-    # python cannot store anything less than microseconds, so if this is set,
-    # then we panic instead of losing data
-    assert_eq("100 nanoseconds", 0, nano100, offset)
+
+    if nano100 != 0:
+        # python cannot store anything less than microseconds. but if this is
+        # set, it's likely garbage data (mechlib)
+        return filetime
 
     delta = timedelta(microseconds=micro)
     return WINDOWS_EPOCH + delta
 
 
-def datetime_to_filetime(timestamp: Optional[datetime]) -> int:
-    if not timestamp:
+def datetime_to_filetime(timestamp: Filetime) -> int:
+    if isinstance(timestamp, int):
+        return timestamp
+
+    if timestamp == WINDOWS_EPOCH:
         return 0
 
     delta = timestamp - WINDOWS_EPOCH
@@ -75,7 +82,7 @@ def read_archive(data: bytes) -> Iterable[ArchiveEntry]:
             data, offset
         )
         offset += TOC_ENTRY.size
-        write_time = filetime_to_datetime(filetime, offset - 4)
+        write_time = filetime_to_datetime(filetime)
         name = ascii_zterm(raw_name)
         end = start + length
         LOG.debug("Entry '%s', data from %d to %d", name, start, end)

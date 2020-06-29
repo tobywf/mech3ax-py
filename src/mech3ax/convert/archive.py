@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from base64 import b64decode, b64encode
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Generator, List, Optional, Set, Union, cast
 
 from pydantic import BaseModel
 
-from ..parse.archive import ArchiveEntry
-from ..parse.utils import ascii_zterm
+from ..parse.archive import ArchiveEntry, Filetime
 
 MANIFEST = "manifest.json"
 CallableGenerator = Generator[Callable[..., Any], None, None]
@@ -41,14 +39,15 @@ class ArchiveInfo(BaseModel):
     flag: int = 0
     comment_bytes: Optional[Base64] = None
     comment_ascii: Optional[str] = None
-    write_time: Optional[datetime] = None
+    write_time: Filetime
 
     @classmethod
     def from_entry(cls, entry: ArchiveEntry, rename: str) -> ArchiveInfo:
         comment_bytes: Optional[bytes] = None
         comment_ascii: Optional[str] = None
         try:
-            comment_ascii = ascii_zterm(entry.comment)
+            # don't use ascii_zterm, this can contain garbage after zeros
+            comment_ascii = entry.comment.rstrip(b"\0").decode("ascii")
         except UnicodeDecodeError:
             comment_bytes = entry.comment
         return cls(
@@ -62,7 +61,8 @@ class ArchiveInfo(BaseModel):
         )
 
     def to_entry(self, data: bytes) -> ArchiveEntry:
-        if self.comment_ascii:
+        # this can be an empty string (mechlib)
+        if self.comment_ascii is not None:
             comment = self.comment_ascii.encode("ascii")
         else:
             comment = cast(bytes, self.comment_bytes)
