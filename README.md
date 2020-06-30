@@ -14,14 +14,15 @@ Obviously, this is an unofficial fan effort and not connected to the developers 
 - All texture and image files (`rimage.zbd`, `rmechtex*.zbd`, `rtexture*.zbd`, `texture*.zbd`) can be converted binary-accurately
 - All messages extracted from `Mech3Msg.dll`
 - Game engine files (`reader*.zbd`) can be converted binary-accurately
+- Animations (`motion.zbd`) can be converted binary-accurately. However, because the model data is not very well understood, applying the animations isn't perfect. [Some limbs have incorrect translations](https://github.com/tobywf/mech3ax/issues/2)
 - 'mech models from `mechlib.zbd`, as well as the material index
-- Animations (`motion.zbd`) can be extracted and applied to models. This works pretty well, but [some limbs have incorrect translations/locational data](https://github.com/tobywf/mech3ax/issues/2)
 
-Not supported (yet):
+Not supported (yet?):
 
+- `anim.zbd` files
 - `gamez.zbd` files
-- Files from the demo version aren't 100% supported yet, some of the model data have different headers (`mechlib.zbd`)
 - The Pirate's Moon expansions ([GitHub issue](https://github.com/tobywf/mech3ax/issues/1))
+- The demo likely won't ever be supported, because it uses different versions/data structures
 
 Additionally, there is a stand-alone script that can convert extracted models to a `.blend` file for the 3D creation suite [Blender](https://www.blender.org/). Please see [Blender script](#blender-script) further down.
 
@@ -33,7 +34,7 @@ Python 3.7 or higher is required.
 
 Dependencies are managed via [poetry](https://python-poetry.org/). To install all dependencies, use:
 
-```
+```bash
 poetry install
 ```
 
@@ -60,6 +61,10 @@ poetry run mech3_from_zbd reader "original/zbd/reader.zbd" "reader.zip"
 poetry run mech3_to_zbd reader "reader.zip" "reader.zbd"
 # the files should be the same
 cmp "original/zbd/reader.zbd" "reader.zbd"
+poetry run mech3_from_zbd motion "original/zbd/motion.zbd" "motion.zip"
+poetry run mech3_to_zbd motion "motion.zip" "motion.zbd"
+# the files should be the same
+cmp "original/zbd/motion.zbd" "motion.zbd"
 ```
 
 I'm still working on adding more formats to this CLI.
@@ -98,19 +103,19 @@ Python 3.7+ is required.
 
 This project uses [pre-commit](https://pre-commit.com/) to run some linting hooks when committing. When you first clone the repo, please run:
 
-```
+```bash
 pre-commit install
 ```
 
 You may also run the hooks at any time:
 
-```
+```bash
 pre-commit run --all-files
 ```
 
 Since poetry is used for dependency management, it will also install development dependencies such as `black`, `isort`, `pylint`, and `mypy`. I've provided a simple script to run these during development called `lint`. You can either run it from a shell session with the poetry-installed virtual environment, or run as follows:
 
-```
+```bash
 poetry run ./lint
 ```
 

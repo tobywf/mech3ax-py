@@ -3,6 +3,7 @@ import sys
 
 from .interp import interp_from_zbd_subparser, interp_to_zbd_subparser
 from .mechlib import mechlib_from_zbd_subparser, mechlib_to_zbd_subparser
+from .motion import motion_from_zbd_subparser, motion_to_zbd_subparser
 from .reader import reader_from_zbd_subparser, reader_to_zbd_subparser
 from .resources import messages_from_dll_subparser
 from .sounds import sounds_from_zbd_subparser, sounds_to_zbd_subparser
@@ -20,6 +21,7 @@ def main_from_zbd() -> None:
     subparsers = parser.add_subparsers(dest="subparser_name")
     interp_from_zbd_subparser(subparsers)
     mechlib_from_zbd_subparser(subparsers)
+    motion_from_zbd_subparser(subparsers)
     reader_from_zbd_subparser(subparsers)
     messages_from_dll_subparser(subparsers)
     sounds_from_zbd_subparser(subparsers)
@@ -45,6 +47,7 @@ def main_to_zbd() -> None:
     subparsers = parser.add_subparsers(dest="subparser_name")
     interp_to_zbd_subparser(subparsers)
     mechlib_to_zbd_subparser(subparsers)
+    motion_to_zbd_subparser(subparsers)
     reader_to_zbd_subparser(subparsers)
     sounds_to_zbd_subparser(subparsers)
     textures_to_zbd_subparser(subparsers)

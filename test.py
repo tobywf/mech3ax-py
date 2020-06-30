@@ -5,6 +5,7 @@ from pathlib import Path
 
 from mech3ax.convert.interp import interp_json_to_zbd, interp_zbd_to_json
 from mech3ax.convert.mechlib import mechlib_zbd_to_zip, mechlib_zip_to_zbd
+from mech3ax.convert.motion import motion_zbd_to_zip, motion_zip_to_zbd
 from mech3ax.convert.reader import reader_zbd_to_zip, reader_zip_to_zbd
 from mech3ax.convert.resources import messages_dll_to_json
 from mech3ax.convert.sounds import sounds_zbd_to_zip, sounds_zip_to_zbd
@@ -22,7 +23,6 @@ class Tester:
     def __init__(self, base_path: Path, output_base: Path):
         self.base_path = base_path
         output_base.mkdir(exist_ok=True)
-        # self.default = self.base_path / "v1.2-us-post" / "zbd"
 
         self.versions = sorted(
             (
@@ -140,6 +140,17 @@ class Tester:
             mechlib_zip_to_zbd(zip_path, output_zbd)
             compare(input_zbd, output_zbd)
 
+    def test_motion(self) -> None:
+        print("--- MOTION ---")
+        for name, zbd_dir, output_base in self.versions:
+            print(name, "motion.zbd")
+            input_zbd = zbd_dir / "motion.zbd"
+            zip_path = output_base / "motion.zip"
+            output_zbd = output_base / "motion.zbd"
+            motion_zbd_to_zip(input_zbd, zip_path)
+            motion_zip_to_zbd(zip_path, output_zbd)
+            compare(input_zbd, output_zbd)
+
 
 def configure_logging() -> None:
     dictConfig(
@@ -199,7 +210,8 @@ def main():
     # tester.test_resources()
     # tester.test_textures()
     # tester.test_reader()
-    tester.test_mechlib()
+    # tester.test_mechlib()
+    tester.test_motion()
 
 
 if __name__ == "__main__":
