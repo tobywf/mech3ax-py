@@ -16,7 +16,7 @@ from struct import Struct
 from typing import BinaryIO, Iterable, Union
 
 from ..errors import Mech3ArchiveError, assert_eq
-from .utils import ascii_zterm
+from .utils import BinReader, ascii_zterm
 
 TOC_FOOTER = Struct("<2I")
 TOC_ENTRY = Struct("<2I 64s I 64s Q")
@@ -67,26 +67,30 @@ def datetime_to_filetime(timestamp: Filetime) -> int:
 
 
 def read_archive(data: bytes) -> Iterable[ArchiveEntry]:
+    reader = BinReader(data)
+    yield from _read_archive(reader)
+
+
+def _read_archive(reader: BinReader) -> Iterable[ArchiveEntry]:
     LOG.debug("Reading archive data...")
-    offset = len(data) - TOC_FOOTER.size
-    version, count = TOC_FOOTER.unpack_from(data, offset)
-    LOG.debug("Archive version %d, count %d at %d", version, count, offset)
-    assert_eq("archive version", VERSION, version, offset, Mech3ArchiveError)
+    reader.offset = len(reader) - TOC_FOOTER.size
+    version, count = reader.read(TOC_FOOTER)
+    LOG.debug("Archive version %d, count %d at %d", version, count, reader.prev)
+    assert_eq("archive version", VERSION, version, reader.prev, Mech3ArchiveError)
 
     # the engine reads the TOC forward
-    offset -= TOC_ENTRY.size * count
+    reader.offset = len(reader) - TOC_FOOTER.size - (TOC_ENTRY.size * count)
 
     for i in range(count):
-        LOG.debug("Reading entry %d at %d", i, offset)
-        start, length, raw_name, flag, comment, filetime = TOC_ENTRY.unpack_from(
-            data, offset
-        )
-        offset += TOC_ENTRY.size
+        LOG.debug("Reading entry %d at %d", i, reader.offset)
+        start, length, raw_name, flag, comment, filetime = reader.read(TOC_ENTRY)
         write_time = filetime_to_datetime(filetime)
         name = ascii_zterm(raw_name)
         end = start + length
         LOG.debug("Entry '%s', data from %d to %d", name, start, end)
-        yield ArchiveEntry(name, start, data[start:end], flag, comment, write_time)
+        yield ArchiveEntry(
+            name, start, reader.data[start:end], flag, comment, write_time
+        )
 
     LOG.debug("Read archive data")
 

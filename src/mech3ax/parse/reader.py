@@ -4,7 +4,7 @@ from struct import Struct
 from typing import Any, BinaryIO, Sequence
 
 from ..errors import Mech3ParseError, assert_eq
-from .utils import UINT32
+from .utils import UINT32, BinReader
 
 FLOAT = Struct("<f")
 
@@ -18,61 +18,49 @@ class NodeType(IntEnum):
     List = 4
 
 
+def _read_node(reader: BinReader) -> Any:
+    start = reader.offset
+    node_type = reader.read_u32()
+
+    # this is too spammy, but useful for manual debug
+    # LOG.debug("Node type %s at %s", node_type, start)
+
+    if node_type == NodeType.Int:
+        return reader.read_u32()
+
+    if node_type == NodeType.Float:
+        (value,) = reader.read(FLOAT)
+        return value
+
+    if node_type == NodeType.Str:
+        return reader.read_string()
+
+    if node_type == NodeType.List:
+        count = reader.read_u32()
+        # count is one bigger, because the engine stores the count as an
+        # integer node as the first item of the list
+        count -= 1
+
+        if count == 0:
+            return None
+
+        values = [_read_node(reader) for _ in range(count)]
+
+        # lists cannot be turned into dictionaries, since there can be
+        # duplicate keys
+        return values
+
+    raise Mech3ParseError(
+        f"Expected node type to be 1-4, but was {node_type} (at {start})"
+    )
+
+
 def read_reader(data: bytes) -> Any:
     LOG.debug("Reading reader data...")
-    offset = 0
-
-    def _read_node() -> Any:
-        nonlocal offset
-        start = offset
-        (node_type,) = UINT32.unpack_from(data, offset)
-        offset += UINT32.size
-
-        # this is too spammy, but useful for manual debug
-        # LOG.debug("Node type %s at %s", node_type, start)
-
-        if node_type == NodeType.Int:
-            (value,) = UINT32.unpack_from(data, offset)
-            offset += UINT32.size
-            return value
-
-        if node_type == NodeType.Float:
-            (value,) = FLOAT.unpack_from(data, offset)
-            offset += FLOAT.size
-            return value
-
-        if node_type == NodeType.Str:
-            (count,) = UINT32.unpack_from(data, offset)
-            offset += UINT32.size
-            value = data[offset : offset + count].decode("ascii")
-            offset += count
-            return value
-
-        if node_type == NodeType.List:
-            (count,) = UINT32.unpack_from(data, offset)
-            offset += UINT32.size
-
-            # count is one bigger, because the engine stores the count as an
-            # integer node as the first item of the list
-            count -= 1
-
-            if count == 0:
-                return None
-
-            values = [_read_node() for _ in range(count)]
-
-            # lists cannot be turned into dictionaries, since there can be
-            # duplicate keys
-
-            return values
-
-        raise Mech3ParseError(
-            f"Expected node type to be 1-4, but was {node_type} (at {start})"
-        )
-
-    root = _read_node()
+    reader = BinReader(data)
+    root = _read_node(reader)
     # make sure all the data is processed
-    assert_eq("reader end", len(data), offset, offset)
+    assert_eq("reader end", len(reader), reader.offset, reader.offset)
     LOG.debug("Read reader data")
     return root
 

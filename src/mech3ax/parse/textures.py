@@ -16,7 +16,7 @@ from ..errors import (
     assert_in,
 )
 from .colors import rgb565to888, rgb888to565, rgb_to_palette, simple_alpha565
-from .utils import ascii_zterm
+from .utils import BinReader, ascii_zterm
 
 TEX_HEADER = Struct("<6I")
 assert TEX_HEADER.size == 24, TEX_HEADER.size
@@ -125,16 +125,14 @@ def _validate_texture_info(
 
 
 def _read_texture(  # pylint: disable=too-many-locals
-    data: bytes, name: str, offset: int, do_stretch: bool
-) -> Tuple[DecodedTexture, int]:
-    flag_raw, width, height, zero, palette_count, stretch = TEX_INFO.unpack_from(
-        data, offset
-    )
+    reader: BinReader, name: str, do_stretch: bool
+) -> DecodedTexture:
+    flag_raw, width, height, zero, palette_count, stretch = reader.read(TEX_INFO)
 
     LOG.debug(
         "Texture '%s', data at %d, flag 0x%02x, %d x %d, zero %d, palette %d, stretch %d",
         name,
-        offset,
+        reader.prev,
         flag_raw,
         width,
         height,
@@ -143,48 +141,49 @@ def _read_texture(  # pylint: disable=too-many-locals
         stretch,
     )
 
-    flag = _validate_texture_info(offset, flag_raw, zero, stretch)
-    offset += TEX_INFO.size
+    flag = _validate_texture_info(reader.prev, flag_raw, zero, stretch)
 
     size = width * height
 
-    LOG.debug("Reading image data at %d", offset)
+    LOG.debug("Reading image data at %d", reader.offset)
     alpha_data: Optional[bytes] = None
 
     has_full_alpha = TextureFlag.FullAlpha(flag)
     has_simple_alpha = TextureFlag.HasAlpha(flag) and not has_full_alpha
 
     if palette_count == 0:
-        pixels = unpack_from(f"<{size}H", data, offset)
-        offset += size * 2
+        pixels = unpack_from(f"<{size}H", reader.data, reader.offset)
+        reader.offset += size * 2
         if has_simple_alpha:
             alpha_data = simple_alpha565(pixels)
         image_data = rgb565to888(pixels)
     else:
-        image_data = data[offset : offset + size]
+        image_data = reader.read_bytes(size)
         in_range = all(index < palette_count for index in image_data)
         assert_eq(
-            "image data (palette) in range", True, in_range, offset, Mech3TextureError
+            "image data (palette) in range",
+            True,
+            in_range,
+            reader.prev,
+            Mech3TextureError,
         )
         # if a palette image has simple alpha, then it would have to be constructed
         # after the palette data is loaded. however, this never seems to happen
         assert_eq(
-            "has simple alpha", False, has_simple_alpha, offset, Mech3TextureError,
+            "has simple alpha", False, has_simple_alpha, reader.prev, Mech3TextureError,
         )
-        offset += size
 
     if has_full_alpha:
-        LOG.debug("Reading alpha data at %d", offset)
-        alpha_data = data[offset : offset + size]
-        offset += size
+        LOG.debug("Reading alpha data at %d", reader.offset)
+        alpha_data = reader.read_bytes(size)
 
     palette_data: Optional[bytes] = None
     if palette_count == 0:
         img = Image.frombytes("RGB", (width, height), image_data)
     else:
-        LOG.debug("Reading palette data at %d", offset)
-        colors = unpack_from(f"<{palette_count}H", data, offset)
-        offset += palette_count * 2
+        LOG.debug("Reading palette data at %d", reader.offset)
+        colors = unpack_from(f"<{palette_count}H", reader.data, reader.offset)
+        reader.offset += palette_count * 2
 
         img = Image.frombytes("P", (width, height), image_data)
         palette_data = rgb565to888(colors)
@@ -204,19 +203,19 @@ def _read_texture(  # pylint: disable=too-many-locals
     if do_stretch and stretch > 0:
         img = stretch_img(img, stretch)
 
-    return DecodedTexture(name, img, flag, stretch, palette_count, palette_data), offset
+    return DecodedTexture(name, img, flag, stretch, palette_count, palette_data)
 
 
 def read_textures(data: bytes, do_stretch: bool = True) -> Iterable[DecodedTexture]:
+    reader = BinReader(data)
+    yield from _read_textures(reader, do_stretch)
+
+
+def _read_textures(reader: BinReader, do_stretch: bool) -> Iterable[DecodedTexture]:
     LOG.debug("Reading texture data...")
-    (
-        zero1,
-        has_entries,
-        global_palette_count,
-        count,
-        zero2,
-        zero3,
-    ) = TEX_HEADER.unpack_from(data, 0)
+    (zero1, has_entries, global_palette_count, count, zero2, zero3,) = reader.read(
+        TEX_HEADER
+    )
     LOG.debug(
         "Texture archive count %d, has entries %d, global palette %d (%d, %d, %d)",
         count,
@@ -227,28 +226,25 @@ def read_textures(data: bytes, do_stretch: bool = True) -> Iterable[DecodedTextu
         zero3,
     )
 
-    assert_eq("field 1", 0, zero1, 0)
-    assert_eq("has entries", 1, has_entries, 4)
+    assert_eq("field 1", 0, zero1, reader.prev + 0)
+    assert_eq("has entries", 1, has_entries, reader.prev + 4)
     # global palette support isn't implemented
-    assert_eq("global palette count", 0, global_palette_count, 8)
-    assert_eq("field 5", 0, zero2, 16)
-    assert_eq("field 6", 0, zero3, 20)
+    assert_eq("global palette count", 0, global_palette_count, reader.prev + 8)
+    assert_eq("field 5", 0, zero2, reader.prev + 16)
+    assert_eq("field 6", 0, zero3, reader.prev + 20)
 
-    offset = TEX_HEADER.size
     table = []
     for i in range(count):
-        LOG.debug("Reading entry %d at %d", i, offset)
-        name, start, palette_index = TEX_ENTRY.unpack_from(data, offset)
-        offset += TEX_ENTRY.size
+        LOG.debug("Reading entry %d at %d", i, reader.offset)
+        name, start, palette_index = reader.read(TEX_ENTRY)
         # global palette support isn't implemented
-        assert_eq("global palette index", -1, palette_index, offset - 4)
+        assert_eq("global palette index", -1, palette_index, reader.offset - 4)
         name = ascii_zterm(name)
         table.append((name, start))
 
     for name, start in table:
-        assert_eq("offset", start, offset, name)
-        texture, offset = _read_texture(data, name, offset, do_stretch)
-        yield texture
+        assert_eq("offset", start, reader.offset, name)
+        yield _read_texture(reader, name, do_stretch)
 
     LOG.debug("Read texture data")
 

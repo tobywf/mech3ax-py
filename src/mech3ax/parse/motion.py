@@ -5,7 +5,7 @@ from typing import BinaryIO, Dict, List, Tuple
 from pydantic import BaseModel
 
 from ..errors import Mech3ParseError, assert_eq
-from .utils import UINT32
+from .utils import UINT32, BinReader
 
 MOTION = Struct("<I f 2I 2f")
 assert MOTION.size == 24, MOTION.size
@@ -30,58 +30,44 @@ class Motion(BaseModel):
 
 
 def read_motion(data: bytes) -> Motion:
-    LOG.debug("Reading motion data...")
-    (
-        version,
-        loop_time,
-        frame_count,
-        part_count,
-        minus_one,
-        plus_one,
-    ) = MOTION.unpack_from(data, 0)
+    reader = BinReader(data)
+    return _read_motion(reader)
 
-    assert_eq("version", VERSION, version, 0)
-    assert_eq("field 5", -1.0, minus_one, 16)
-    assert_eq("field 6", 1.0, plus_one, 20)
+
+def _read_motion(reader: BinReader) -> Motion:
+    LOG.debug("Reading motion data...")
+    (version, loop_time, frame_count, part_count, minus_one, plus_one,) = reader.read(
+        MOTION
+    )
+
+    assert_eq("version", VERSION, version, reader.prev + 0)
+    assert_eq("field 5", -1.0, minus_one, reader.prev + 16)
+    assert_eq("field 6", 1.0, plus_one, reader.prev + 20)
 
     if loop_time <= 0.0:
         raise Mech3ParseError(
-            f"Expected loop time to be greater than 0.0, but was {loop_time} (at 4)"
+            f"Expected loop time to be greater than 0.0, but was {loop_time} (at {reader.prev + 4})"
         )
-
-    offset = MOTION.size
 
     # for some reason, this is off-by-one
     frame_count += 1
 
     parts = {}
     for _ in range(part_count):
-        (length,) = UINT32.unpack_from(data, offset)
-        offset += UINT32.size
-        part_name = data[offset : offset + length].decode("ascii")
-        offset += length
+        part_name = reader.read_string()
 
-        (flag,) = UINT32.unpack_from(data, offset)
+        flag = reader.read_u32()
         # 8 = translation, 4 = rotation, 2 = scaling (never in motion.zbd)
-        assert_eq("flag", 12, flag, offset)
-        offset += UINT32.size
+        assert_eq("flag", 12, flag, reader.prev)
 
-        translations = []
-        for _ in range(frame_count):
-            translations.append(VECTOR.unpack_from(data, offset))
-            offset += VECTOR.size
-
+        translations = [reader.read(VECTOR) for _ in range(frame_count)]
         # scaling would be read here (never in motion.zbd)
-
-        rotations = []
-        for _ in range(frame_count):
-            rotations.append(QUATERNION.unpack_from(data, offset))
-            offset += QUATERNION.size
+        rotations = [reader.read(QUATERNION) for _ in range(frame_count)]
 
         # interleave translation and rotation for easy frame access
         parts[part_name] = list(zip(translations, rotations))
 
-    assert_eq("motion end", len(data), offset, offset)
+    assert_eq("motion end", len(reader), reader.offset, reader.offset)
     LOG.debug("Read motion data")
     return Motion(frames=frame_count, loop_time=loop_time, parts=parts)
 

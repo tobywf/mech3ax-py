@@ -2,12 +2,12 @@ import logging
 from datetime import datetime, timezone
 from io import BytesIO
 from struct import Struct
-from typing import BinaryIO, Iterable, Sequence, Tuple
+from typing import BinaryIO, Iterable, Sequence
 
 from pydantic import BaseModel
 
 from ..errors import Mech3ParseError, assert_eq
-from .utils import UINT32, ascii_zterm
+from .utils import UINT32, BinReader, ascii_zterm
 
 INTERP_HEADER = Struct("<3I")
 INTERP_ENTRY = Struct("<120s 2I")
@@ -25,47 +25,46 @@ class Script(BaseModel):
     lines: Sequence[str]
 
 
-def _read_script_lines(data: bytes, offset: int) -> Tuple[Sequence[str], int]:
+def _read_script_lines(reader: BinReader) -> Sequence[str]:
     lines = []
     while True:
-        (size,) = UINT32.unpack_from(data, offset)
-        offset += UINT32.size
-
+        size = reader.read_u32()
         # end of script
         if size == 0:
             break
 
-        (arg_count,) = UINT32.unpack_from(data, offset)
-        offset += UINT32.size
+        arg_count = reader.read_u32()
+        command = reader.read_bytes(size).decode("ascii")
 
-        command = data[offset : offset + size].decode("ascii")
-        assert_eq("argument count", arg_count, command.count("\0"), offset)
-        assert_eq("command end", "\0", command[-1], offset)
+        assert_eq("argument count", arg_count, command.count("\0"), reader.prev)
+        assert_eq("command end", "\0", command[-1], reader.offset - 1)
         if " " in command:
             raise Mech3ParseError(
-                f"Expected command to not contain spaces (at {offset})"
+                f"Expected command to not contain spaces (at {reader.prev})"
             )
-        offset += size
         lines.append(command.rstrip("\0").replace("\0", " "))
 
-    return lines, offset
+    return lines
 
 
 def read_interp(data: bytes) -> Iterable[Script]:
+    reader = BinReader(data)
+    yield from _read_interp(reader)
+
+
+def _read_interp(reader: BinReader) -> Iterable[Script]:
     LOG.debug("Reading interpreter data...")
-    signature, version, count = INTERP_HEADER.unpack_from(data, 0)
+    signature, version, count = reader.read(INTERP_HEADER)
     LOG.debug(
         "Interp signature 0x%08x, version %d, count %d", signature, version, count
     )
-    assert_eq("signature", SIGNATURE, signature, 0)
-    assert_eq("version", VERSION, version, 4)
+    assert_eq("signature", SIGNATURE, signature, reader.prev + 0)
+    assert_eq("version", VERSION, version, reader.prev + 4)
 
-    offset = INTERP_HEADER.size
     script_info = []
     for i in range(count):
-        LOG.debug("Reading entry %d at %d", i, offset)
-        raw_name, last_modified, start = INTERP_ENTRY.unpack_from(data, offset)
-        offset += INTERP_ENTRY.size
+        LOG.debug("Reading entry %d at %d", i, reader.offset)
+        raw_name, last_modified, start = reader.read(INTERP_ENTRY)
         name = ascii_zterm(raw_name)
         timestamp = datetime.fromtimestamp(last_modified, timezone.utc)
         script_info.append((name, timestamp, start))
@@ -77,11 +76,11 @@ def read_interp(data: bytes) -> Iterable[Script]:
             start,
             timestamp.isoformat(),
         )
-        assert_eq("offset", start, offset, name)
-        lines, offset = _read_script_lines(data, offset)
+        assert_eq("offset", start, reader.offset, name)
+        lines = _read_script_lines(reader)
         yield Script(name=name, timestamp=timestamp, lines=lines)
 
-    assert_eq("offset", len(data), offset, name)
+    assert_eq("interp end", len(reader), reader.offset, reader.offset)
     LOG.debug("Read interpreter data")
 
 
