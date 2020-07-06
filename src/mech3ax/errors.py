@@ -40,6 +40,19 @@ def assert_eq(
         )
 
 
+def assert_ne(
+    name: str,
+    expected: T,
+    actual: T,
+    location: Union[int, str],
+    error_class: Type[Mech3Error] = Mech3ParseError,
+) -> None:
+    if actual == expected:
+        raise error_class(
+            f"Expected {name} to not be {expected!r}, but was (at {location})"
+        )
+
+
 def assert_in(
     name: str,
     expected: Container[T],

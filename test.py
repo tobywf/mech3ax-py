@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 from logging.config import dictConfig
 from pathlib import Path
 
+from mech3ax.convert.gamez import gamez_zbd_to_zip
 from mech3ax.convert.interp import interp_json_to_zbd, interp_zbd_to_json
 from mech3ax.convert.mechlib import mechlib_zbd_to_zip, mechlib_zip_to_zbd
 from mech3ax.convert.motion import motion_zbd_to_zip, motion_zip_to_zbd
@@ -131,7 +132,7 @@ class Tester:
 
     def test_mechlib(self) -> None:
         print("--- MECHLIB ---")
-        for name, zbd_dir, output_base in self.versions[:1]:
+        for name, zbd_dir, output_base in self.versions:
             print(name, "mechlib.zbd")
             input_zbd = zbd_dir / "mechlib.zbd"
             zip_path = output_base / "mechlib.zip"
@@ -150,6 +151,25 @@ class Tester:
             motion_zbd_to_zip(input_zbd, zip_path)
             motion_zip_to_zbd(zip_path, output_zbd)
             compare(input_zbd, output_zbd)
+
+    def test_gamez(self) -> None:
+        print("--- GAMEZ ---")
+        for name, zbd_dir, output_base in self.versions:
+            output_dir = output_base / "gamez"
+            output_dir.mkdir(exist_ok=True)
+
+            for input_zbd in sorted(zbd_dir.rglob("gamez.zbd")):
+                rel_path = input_zbd.relative_to(zbd_dir)
+                mission = rel_path.parent.name
+                zip_name = f"{mission}-{input_zbd.stem}.json"
+                # zbd_name = f"{mission}-{input_zbd.stem}.zbd"
+
+                zip_path = output_dir / zip_name
+                # output_zbd = output_dir / zbd_name
+                print(name, mission, input_zbd.name)
+                gamez_zbd_to_zip(input_zbd, zip_path)
+                # reader_zip_to_zbd(zip_path, output_zbd)
+                # compare(input_zbd, output_zbd)
 
 
 def configure_logging() -> None:
@@ -211,7 +231,8 @@ def main():
     # tester.test_textures()
     # tester.test_reader()
     # tester.test_mechlib()
-    tester.test_motion()
+    # tester.test_motion()
+    tester.test_gamez()
 
 
 if __name__ == "__main__":

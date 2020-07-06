@@ -4,7 +4,7 @@ from typing import BinaryIO, Iterable, Optional, Sequence
 
 from pydantic import BaseModel
 
-from ..errors import Mech3MaterialError, assert_eq, assert_in
+from ..errors import Mech3MaterialError, assert_eq, assert_in, assert_ne
 from .utils import UINT32, BinReader
 
 LOG = logging.getLogger(__name__)
@@ -43,10 +43,6 @@ class Material(BaseModel):
 
 def read_materials(data: bytes) -> Iterable[Material]:
     reader = BinReader(data)
-    yield from _read_materials(reader)
-
-
-def _read_materials(reader: BinReader) -> Iterable[Material]:
     LOG.debug("Reading materials data...")
     count = reader.read_u32()
 
@@ -64,7 +60,7 @@ def _read_materials(reader: BinReader) -> Iterable[Material]:
             unk3,
             unk4,
             unk5,
-            cycle,
+            cycle_ptr,
         ) = reader.read(MATERIAL_INFO)
 
         assert_in("field 1", (0x00, 0xFF), unk1, reader.prev + 0)
@@ -72,12 +68,12 @@ def _read_materials(reader: BinReader) -> Iterable[Material]:
         assert_eq("field 9", 0.5, unk3, reader.prev + 24)
         assert_eq("field 10", 0.5, unk4, reader.prev + 28)
         assert_eq("field 11", 0, unk5, reader.prev + 32)
-        assert_eq("field 12", 0, cycle, reader.prev + 36)
+        assert_eq("cycle pointer", 0, cycle_ptr, reader.prev + 36)
 
         textured = (flag & 1) == 1
 
         if textured:
-            assert_eq("pointer non-zero", True, pointer != 0, reader.prev + 16)
+            assert_ne("pointer", 0, pointer, reader.prev + 16)
             # this seems to be RGB555, not RGB565?
             assert_eq("rgb", 0x7FFF, rgb, reader.prev + 2)
             assert_eq("red", 255.0, red, reader.prev + 4)

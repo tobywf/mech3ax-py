@@ -68,10 +68,6 @@ def datetime_to_filetime(timestamp: Filetime) -> int:
 
 def read_archive(data: bytes) -> Iterable[ArchiveEntry]:
     reader = BinReader(data)
-    yield from _read_archive(reader)
-
-
-def _read_archive(reader: BinReader) -> Iterable[ArchiveEntry]:
     LOG.debug("Reading archive data...")
     reader.offset = len(reader) - TOC_FOOTER.size
     version, count = reader.read(TOC_FOOTER)

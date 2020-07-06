@@ -208,10 +208,6 @@ def _read_texture(  # pylint: disable=too-many-locals
 
 def read_textures(data: bytes, do_stretch: bool = True) -> Iterable[DecodedTexture]:
     reader = BinReader(data)
-    yield from _read_textures(reader, do_stretch)
-
-
-def _read_textures(reader: BinReader, do_stretch: bool) -> Iterable[DecodedTexture]:
     LOG.debug("Reading texture data...")
     (zero1, has_entries, global_palette_count, count, zero2, zero3,) = reader.read(
         TEX_HEADER

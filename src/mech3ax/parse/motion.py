@@ -31,10 +31,6 @@ class Motion(BaseModel):
 
 def read_motion(data: bytes) -> Motion:
     reader = BinReader(data)
-    return _read_motion(reader)
-
-
-def _read_motion(reader: BinReader) -> Motion:
     LOG.debug("Reading motion data...")
     (version, loop_time, frame_count, part_count, minus_one, plus_one,) = reader.read(
         MOTION

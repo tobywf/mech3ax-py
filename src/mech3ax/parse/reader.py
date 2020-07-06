@@ -3,7 +3,7 @@ from enum import IntEnum
 from struct import Struct
 from typing import Any, BinaryIO, Sequence
 
-from ..errors import Mech3ParseError, assert_eq
+from ..errors import Mech3InternalError, Mech3ParseError, assert_eq, assert_in
 from .utils import UINT32, BinReader
 
 FLOAT = Struct("<f")
@@ -18,12 +18,12 @@ class NodeType(IntEnum):
     List = 4
 
 
-def _read_node(reader: BinReader) -> Any:
-    start = reader.offset
-    node_type = reader.read_u32()
+NODE_TYPES = (NodeType.Int, NodeType.Float, NodeType.Str, NodeType.List)
 
-    # this is too spammy, but useful for manual debug
-    # LOG.debug("Node type %s at %s", node_type, start)
+
+def _read_node(reader: BinReader) -> Any:
+    node_type = reader.read_u32()
+    assert_in("node type", NODE_TYPES, node_type, reader.prev)
 
     if node_type == NodeType.Int:
         return reader.read_u32()
@@ -50,14 +50,12 @@ def _read_node(reader: BinReader) -> Any:
         # duplicate keys
         return values
 
-    raise Mech3ParseError(
-        f"Expected node type to be 1-4, but was {node_type} (at {start})"
-    )
+    raise Mech3InternalError("Invalid flag, assert missed")
 
 
 def read_reader(data: bytes) -> Any:
-    LOG.debug("Reading reader data...")
     reader = BinReader(data)
+    LOG.debug("Reading reader data...")
     root = _read_node(reader)
     # make sure all the data is processed
     assert_eq("reader end", len(reader), reader.offset, reader.offset)

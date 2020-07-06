@@ -49,10 +49,6 @@ def _read_script_lines(reader: BinReader) -> Sequence[str]:
 
 def read_interp(data: bytes) -> Iterable[Script]:
     reader = BinReader(data)
-    yield from _read_interp(reader)
-
-
-def _read_interp(reader: BinReader) -> Iterable[Script]:
     LOG.debug("Reading interpreter data...")
     signature, version, count = reader.read(INTERP_HEADER)
     LOG.debug(
