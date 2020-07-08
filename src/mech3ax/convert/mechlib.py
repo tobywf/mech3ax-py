@@ -7,7 +7,7 @@ from argparse import Namespace, _SubParsersAction
 from io import BytesIO
 from pathlib import Path
 from typing import List
-from zipfile import ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from pydantic import BaseModel
 
@@ -59,7 +59,8 @@ def mechlib_read(z: ZipFile, entry: ArchiveEntry, renamer: Renamer) -> ArchiveIn
 def mechlib_zbd_to_zip(input_zbd: Path, output_zip: Path) -> None:
     renamer = Renamer()
 
-    with ZipFile(output_zip, "w") as z:
+    # the models can get rather big...
+    with ZipFile(output_zip, "w", compression=ZIP_DEFLATED, compresslevel=9) as z:
         files = []
 
         data = input_zbd.read_bytes()

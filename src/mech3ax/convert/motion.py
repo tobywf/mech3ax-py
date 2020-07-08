@@ -9,7 +9,7 @@ from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
 from typing import Dict
-from zipfile import ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from ..parse.archive import ArchiveEntry, read_archive, write_archive
 from ..parse.motion import Motion, read_motion, write_motion
@@ -21,7 +21,7 @@ LOG = logging.getLogger(__name__)
 
 
 def motion_zbd_to_zip(input_zbd: Path, output_zip: Path) -> None:
-    with ZipFile(output_zip, "w") as z:
+    with ZipFile(output_zip, "w", compression=ZIP_DEFLATED, compresslevel=9) as z:
         motions = []
         mech_motions: Dict[str, Dict[str, str]] = defaultdict(dict)
 

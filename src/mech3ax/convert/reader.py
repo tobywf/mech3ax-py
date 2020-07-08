@@ -7,7 +7,7 @@ import logging
 from argparse import Namespace, _SubParsersAction
 from io import BytesIO
 from pathlib import Path
-from zipfile import ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from ..parse.archive import ArchiveEntry, read_archive, write_archive
 from ..parse.reader import read_reader, write_reader
@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 def reader_zbd_to_zip(input_zbd: Path, output_zip: Path) -> None:
     renamer = Renamer()
 
-    with ZipFile(output_zip, "w") as z:
+    with ZipFile(output_zip, "w", compression=ZIP_DEFLATED, compresslevel=9) as z:
         readers = []
 
         data = input_zbd.read_bytes()
