@@ -18,14 +18,12 @@ class Base64(bytes):
         yield cls.validate
 
     @classmethod
-    def validate(cls, value: Union[str, bytes, None]) -> Optional[bytes]:
-        if value is None:
-            return None
+    def validate(cls, value: Union[str, bytes]) -> bytes:
         if isinstance(value, bytes):
             return value
         if isinstance(value, str):
             return b64decode(value)
-        raise TypeError("bytes or string required")
+        raise TypeError("bytes or string required")  # pragma: no cover
 
     @staticmethod
     def to_str(value: bytes) -> str:

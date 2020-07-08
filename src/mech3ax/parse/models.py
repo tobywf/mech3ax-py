@@ -188,10 +188,12 @@ def _read_mesh(reader: BinReader) -> Mesh:
 
     assert_eq("field 88", 0, zero88, reader.prev + 88)
 
-    if vertex_count == 0:
-        assert_eq("vertex ptr", 0, vertex_ptr, reader.prev + 56)
-    else:
-        assert_ne("vertex ptr", 0, vertex_ptr, reader.prev + 56)
+    # meshes always have vertices and polygons
+    assert_gt("polygon count", 0, polygon_count, reader.prev + 16)
+    assert_ne("polygon ptr", 0, polygon_ptr, reader.prev + 52)
+
+    assert_gt("vertex count", 0, vertex_count, reader.prev + 20)
+    assert_ne("vertex ptr", 0, vertex_ptr, reader.prev + 56)
 
     vertices = [reader.read(VEC_3D) for _ in range(vertex_count)]
 
@@ -208,12 +210,7 @@ def _read_mesh(reader: BinReader) -> Mesh:
     assert_eq("light count", 0, light_count, reader.prev + 32)
     assert_eq("light ptr", 0, light_ptr, reader.prev + 64)
 
-    if polygon_count == 0:
-        assert_eq("polygon ptr", 0, polygon_ptr, reader.prev + 52)
-        polygons: List[Polygon] = []
-    else:
-        assert_ne("polygon ptr", 0, polygon_ptr, reader.prev + 52)
-        polygons = _read_polygons(reader, polygon_count)
+    polygons = _read_polygons(reader, polygon_count)
 
     LOG.debug("Read mesh")
 

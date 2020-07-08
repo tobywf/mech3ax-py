@@ -4,7 +4,7 @@ version = "0.1.1"
 description = "MechWarrior 3 Asset Extractor is a project to extract assets from the 1998 MechWarrior 3 game to modern formats"
 authors = ["Toby Fleming <tobywf@users.noreply.github.com>"]
 license = "GPL-3.0-only"
-readme = "README.rst"
+readme = "README.md"
 homepage = "https://github.com/tobywf/mech3ax"
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -28,6 +28,7 @@ black = "^19.10b0"
 mypy = "^0.782"
 isort = {extras = ["pyproject"], version = "^4.3.21"}
 pylint = {extras = ["toml"], version = "^2.5.3"}
+coverage = "^5.2"
 
 [tool.poetry.scripts]
 mech3_from_zbd = "mech3ax.convert.cli:main_from_zbd"
@@ -43,6 +44,12 @@ line_length = 88
 
 indent = '    '
 combine_as_imports = true
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+#fail_under = 100
 
 [tool.pylint.MASTER]
 ignore = "CVS"

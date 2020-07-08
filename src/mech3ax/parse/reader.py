@@ -50,7 +50,7 @@ def _read_node(reader: BinReader) -> Any:
         # duplicate keys
         return values
 
-    raise Mech3InternalError("Invalid flag, assert missed")
+    raise Mech3InternalError("node type")  # pragma: no cover
 
 
 def read_reader(data: bytes) -> Any:
@@ -97,13 +97,11 @@ def write_reader(f: BinaryIO, root: Any) -> None:
         elif isinstance(node, str):
             node = node.encode("ascii")
             _write_bytes(node)
-        elif isinstance(node, bytes):
-            _write_bytes(node)
         elif isinstance(node, list):
             _write_list(node)
         elif node is None:
             _write_list([])
-        else:
+        else:  # pragma: no cover
             raise Mech3ParseError(f"node type: {type(node)!r} is invalid")
 
     _write_node(root)

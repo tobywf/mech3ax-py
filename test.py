@@ -11,7 +11,6 @@ from mech3ax.convert.reader import reader_zbd_to_zip, reader_zip_to_zbd
 from mech3ax.convert.resources import messages_dll_to_json
 from mech3ax.convert.sounds import sounds_zbd_to_zip, sounds_zip_to_zbd
 from mech3ax.convert.textures import textures_zbd_to_zip, textures_zip_to_zbd
-from mech3ax.errors import Mech3Error
 from mech3ax.parse.resources import LocaleID
 
 
@@ -100,12 +99,8 @@ class Tester:
                 output_zbd = output_dir / zbd_name
                 print(name, mission, input_zbd.name)
                 textures_zbd_to_zip(input_zbd, zip_path)
-                try:
-                    textures_zip_to_zbd(zip_path, output_zbd)
-                except Mech3Error as e:
-                    print("*** ERROR ***", e)
-                else:
-                    compare(input_zbd, output_zbd)
+                textures_zip_to_zbd(zip_path, output_zbd)
+                compare(input_zbd, output_zbd)
 
     def test_reader(self) -> None:
         print("--- READER ---")
@@ -221,9 +216,12 @@ def main():
     parser.add_argument(
         "output_dir", type=lambda value: Path(value).resolve(strict=True)
     )
+    parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
-    configure_logging()
+    if args.verbose:
+        configure_logging()
+
     tester = Tester(args.versions_dir, args.output_dir)
     # tester.test_sounds()
     # tester.test_interp()
@@ -235,5 +233,5 @@ def main():
     # tester.test_gamez()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
