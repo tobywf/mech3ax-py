@@ -1,6 +1,16 @@
-from typing import Container, Type, TypeVar, Union
+from typing import Any, Container, Type, TypeVar, Union
 
-T = TypeVar("T")
+from typing_extensions import Protocol
+
+T = TypeVar("T", bound="Comparable")
+
+
+class Comparable(Protocol):
+    def __lt__(self: T, other: T) -> bool:
+        pass
+
+    def __gt__(self: T, other: T) -> bool:
+        pass
 
 
 class Mech3Error(Exception):
@@ -27,6 +37,19 @@ class Mech3MaterialError(Mech3Error):
     """An error when writing a texture."""
 
 
+def _assert_base(  # pylint: disable=too-many-arguments
+    result: bool,
+    operator: str,
+    name: str,
+    expected: Any,
+    actual: Any,
+    location: Union[int, str],
+    error_class: Type[Mech3Error] = Mech3ParseError,
+) -> None:
+    if not result:
+        raise error_class(f"{name}: {actual!r} {operator} {expected!r} (at {location})")
+
+
 def assert_eq(
     name: str,
     expected: T,
@@ -34,10 +57,8 @@ def assert_eq(
     location: Union[int, str],
     error_class: Type[Mech3Error] = Mech3ParseError,
 ) -> None:
-    if actual != expected:
-        raise error_class(
-            f"Expected {name} to be {expected!r}, but was {actual!r} (at {location})"
-        )
+    result = actual == expected
+    _assert_base(result, "==", name, expected, actual, location, error_class)
 
 
 def assert_ne(
@@ -47,10 +68,30 @@ def assert_ne(
     location: Union[int, str],
     error_class: Type[Mech3Error] = Mech3ParseError,
 ) -> None:
-    if actual == expected:
-        raise error_class(
-            f"Expected {name} to not be {expected!r}, but was (at {location})"
-        )
+    result = actual != expected
+    _assert_base(result, "!=", name, expected, actual, location, error_class)
+
+
+def assert_lt(
+    name: str,
+    expected: T,
+    actual: T,
+    location: Union[int, str],
+    error_class: Type[Mech3Error] = Mech3ParseError,
+) -> None:
+    result = actual < expected
+    _assert_base(result, "<", name, expected, actual, location, error_class)
+
+
+def assert_gt(
+    name: str,
+    expected: T,
+    actual: T,
+    location: Union[int, str],
+    error_class: Type[Mech3Error] = Mech3ParseError,
+) -> None:
+    result = actual > expected
+    _assert_base(result, ">", name, expected, actual, location, error_class)
 
 
 def assert_in(
@@ -60,7 +101,5 @@ def assert_in(
     location: Union[int, str],
     error_class: Type[Mech3Error] = Mech3ParseError,
 ) -> None:
-    if actual not in expected:
-        raise error_class(
-            f"Expected {name} to be one of {expected!r}, but was {actual!r} (at {location})"
-        )
+    result = actual in expected
+    _assert_base(result, "in", name, expected, actual, location, error_class)

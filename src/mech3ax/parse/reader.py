@@ -63,55 +63,37 @@ def read_reader(data: bytes) -> Any:
     return root
 
 
-def write_reader(f: BinaryIO, root: Any) -> int:
+def write_reader(f: BinaryIO, root: Any) -> None:
     LOG.debug("Writing reader data...")
-    offset = 0
 
     def _write_bytes(node: bytes) -> None:
-        nonlocal offset
-
         f.write(UINT32.pack(NodeType.Str))
-        offset += UINT32.size
-
-        count = len(node)
-        f.write(UINT32.pack(count))
-        offset += UINT32.size
-
+        length = len(node)
+        f.write(UINT32.pack(length))
         f.write(node)
-        offset += count
 
     def _write_list(node: Sequence[Any]) -> None:
-        nonlocal offset
-
         f.write(UINT32.pack(NodeType.List))
-        offset += UINT32.size
 
         # count is one bigger, because the engine stores the count as an
         # integer node as the first item of the list
         count = len(node) + 1
-
         f.write(UINT32.pack(count))
-        offset += UINT32.size
 
         for item in node:
             _write_node(item)
 
     def _write_node(node: Any) -> None:
-        nonlocal offset
 
         # this is too spammy, but useful for manual debug
         # LOG.debug("Node %r at %s", node, offset)
 
         if isinstance(node, int):
             f.write(UINT32.pack(NodeType.Int))
-            offset += UINT32.size
             f.write(UINT32.pack(node))
-            offset += UINT32.size
         elif isinstance(node, float):
             f.write(UINT32.pack(NodeType.Float))
-            offset += UINT32.size
             f.write(FLOAT.pack(node))
-            offset += FLOAT.size
         elif isinstance(node, str):
             node = node.encode("ascii")
             _write_bytes(node)
@@ -122,11 +104,8 @@ def write_reader(f: BinaryIO, root: Any) -> int:
         elif node is None:
             _write_list([])
         else:
-            raise Mech3ParseError(
-                f"Expected node type to be compatible, but was {type(node)} (at {offset})"
-            )
+            raise Mech3ParseError(f"node type: {type(node)!r} is invalid")
 
     _write_node(root)
 
     LOG.debug("Wrote reader data")
-    return offset

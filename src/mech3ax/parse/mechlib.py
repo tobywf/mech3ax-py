@@ -63,11 +63,11 @@ def read_materials(data: bytes) -> Iterable[Material]:
             cycle_ptr,
         ) = reader.read(MATERIAL_INFO)
 
-        assert_in("field 1", (0x00, 0xFF), unk1, reader.prev + 0)
-        assert_eq("field 8", 0.0, unk2, reader.prev + 20)
-        assert_eq("field 9", 0.5, unk3, reader.prev + 24)
-        assert_eq("field 10", 0.5, unk4, reader.prev + 28)
-        assert_eq("field 11", 0, unk5, reader.prev + 32)
+        assert_in("field 00", (0x00, 0xFF), unk1, reader.prev + 0)
+        assert_eq("field 20", 0.0, unk2, reader.prev + 20)
+        assert_eq("field 24", 0.5, unk3, reader.prev + 24)
+        assert_eq("field 28", 0.5, unk4, reader.prev + 28)
+        assert_eq("field 32", 0, unk5, reader.prev + 32)
         assert_eq("cycle pointer", 0, cycle_ptr, reader.prev + 36)
 
         textured = (flag & 1) == 1
@@ -112,12 +112,8 @@ def write_materials(f: BinaryIO, materials: Sequence[Material]) -> None:
         textured = (material.flag & 1) == 1
 
         if textured:
-            assert_eq(
-                "pointer non-zero", True, material.pointer != 0, i, Mech3MaterialError
-            )
-            assert_eq(
-                "name non-empty", True, bool(material.name), i, Mech3MaterialError
-            )
+            assert_ne("pointer", 0, material.pointer, i, Mech3MaterialError)
+            assert_eq("name", True, bool(material.name), i, Mech3MaterialError)
         else:
             assert_eq("pointer", 0, material.pointer, i)
 

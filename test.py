@@ -230,9 +230,9 @@ def main():
     # tester.test_resources()
     # tester.test_textures()
     # tester.test_reader()
-    # tester.test_mechlib()
+    tester.test_mechlib()
     # tester.test_motion()
-    tester.test_gamez()
+    # tester.test_gamez()
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ from typing import BinaryIO, Dict, List, Tuple
 
 from pydantic import BaseModel
 
-from ..errors import Mech3ParseError, assert_eq
+from ..errors import assert_eq, assert_gt
 from .utils import UINT32, BinReader
 
 MOTION = Struct("<I f 2I 2f")
@@ -37,13 +37,9 @@ def read_motion(data: bytes) -> Motion:
     )
 
     assert_eq("version", VERSION, version, reader.prev + 0)
-    assert_eq("field 5", -1.0, minus_one, reader.prev + 16)
-    assert_eq("field 6", 1.0, plus_one, reader.prev + 20)
-
-    if loop_time <= 0.0:
-        raise Mech3ParseError(
-            f"Expected loop time to be greater than 0.0, but was {loop_time} (at {reader.prev + 4})"
-        )
+    assert_gt("loop time", 0.0, loop_time, reader.prev + 4)
+    assert_eq("field 16", -1.0, minus_one, reader.prev + 16)
+    assert_eq("field 20", 1.0, plus_one, reader.prev + 20)
 
     # for some reason, this is off-by-one
     frame_count += 1

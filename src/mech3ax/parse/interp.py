@@ -39,9 +39,7 @@ def _read_script_lines(reader: BinReader) -> Sequence[str]:
         assert_eq("argument count", arg_count, command.count("\0"), reader.prev)
         assert_eq("command end", "\0", command[-1], reader.offset - 1)
         if " " in command:
-            raise Mech3ParseError(
-                f"Expected command to not contain spaces (at {reader.prev})"
-            )
+            raise Mech3ParseError(f"command contains spaces (at {reader.prev})")
         lines.append(command.rstrip("\0").replace("\0", " "))
 
     return lines

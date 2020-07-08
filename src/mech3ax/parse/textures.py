@@ -93,15 +93,13 @@ def stretch_img(img: Image, stretch: int) -> Image:
 def _validate_texture_info(
     offset: int, flag: int, zero: int, stretch: int
 ) -> TextureFlag:
-    assert_eq("field 4", 0, zero, offset)
+    assert_eq("field 8", 0, zero, offset)
     assert_in("stretch", (0, 1, 2, 3), stretch, offset)
 
     try:
         flag = TextureFlag.check(flag)
     except ValueError as e:
-        raise Mech3ParseError(
-            f"Expected flag to be valid, but was {flag:02X} (at {offset})"
-        ) from e
+        raise Mech3ParseError(f"flag: {flag:02X} is invalid (at {offset})") from e
 
     # one byte per pixel support isn't implemented
     assert_eq(
@@ -222,12 +220,12 @@ def read_textures(data: bytes, do_stretch: bool = True) -> Iterable[DecodedTextu
         zero3,
     )
 
-    assert_eq("field 1", 0, zero1, reader.prev + 0)
+    assert_eq("field 00", 0, zero1, reader.prev + 0)
     assert_eq("has entries", 1, has_entries, reader.prev + 4)
     # global palette support isn't implemented
     assert_eq("global palette count", 0, global_palette_count, reader.prev + 8)
-    assert_eq("field 5", 0, zero2, reader.prev + 16)
-    assert_eq("field 6", 0, zero3, reader.prev + 20)
+    assert_eq("field 16", 0, zero2, reader.prev + 16)
+    assert_eq("field 20", 0, zero3, reader.prev + 20)
 
     table = []
     for i in range(count):

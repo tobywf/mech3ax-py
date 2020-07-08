@@ -21,6 +21,7 @@ from ..parse.mechlib import (
     read_version,
     write_materials,
 )
+from ..parse.models import read_model
 from .archive import MANIFEST, ArchiveInfo, ArchiveManifest, Renamer
 from .utils import dir_exists, output_resolve, path_exists
 
@@ -48,10 +49,11 @@ def mechlib_read(z: ZipFile, entry: ArchiveEntry, renamer: Renamer) -> ArchiveIn
         z.writestr(MATERIALS, materials.json(exclude_defaults=True, indent=2))
         return ArchiveInfo.from_entry(entry, MATERIALS)
 
-    # name = entry.name.replace(".flt", ".bin")
+    rename = entry.name.replace(".flt", ".json")
+    model = read_model(entry.data)
+    z.writestr(rename, model.json(indent=2))
+
     rename = renamer(entry.name)
-    # model = read_model(entry.data)
-    # z.writestr(rename, json.dumps(model, indent=2))
 
     with z.open(rename, mode="w") as fb:
         fb.write(entry.data)

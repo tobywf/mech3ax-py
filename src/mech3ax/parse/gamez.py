@@ -7,7 +7,7 @@ from typing import List, Optional, Tuple
 
 from pydantic import BaseModel
 
-from ..errors import Mech3ParseError, assert_eq, assert_in, assert_ne
+from ..errors import Mech3ParseError, assert_eq, assert_in, assert_lt, assert_ne
 from .utils import BinReader, ascii_zterm
 
 SIGNATURE = 0x02971222
@@ -80,7 +80,7 @@ def _read_textures(reader: BinReader, count: int) -> List[str]:
         # a pointer to the previous texture in the global array
         assert_eq("prev ptr", 0, prev_ptr, reader.prev + 0)
         # a non-zero value here causes additional dynamic code to be called
-        assert_eq("field 2", 0, unknown, reader.prev + 4)
+        assert_eq("field 4", 0, unknown, reader.prev + 4)
         # 2 if the texture is used, 0 if the texture is unused
         # 1 or 3 if the texture is being processed (deallocated?)
         assert_eq("used", 2, used, reader.prev + 28)
@@ -118,9 +118,7 @@ def _read_materials_set(  # pylint: disable=too-many-locals
         try:
             flag = MaterialFlag.check(flag)
         except ValueError:
-            raise Mech3ParseError(
-                f"Expected valid flag, but was {flag:02X} (at {reader.prev + 1})"
-            )
+            raise Mech3ParseError(f"flag: {flag:02X} is invalid (at {reader.prev + 1})")
         assert_eq("free", False, MaterialFlag.Free(flag), reader.prev + 1)
 
         if MaterialFlag.Textured(flag):
@@ -142,9 +140,9 @@ def _read_materials_set(  # pylint: disable=too-many-locals
             assert_eq("rgb", 0x0, rgb, reader.prev + 2)
 
         # not sure what these are?
-        assert_eq("field 8", 0.0, unk2, reader.prev + 20)
-        assert_eq("field 9", 0.5, unk3, reader.prev + 24)
-        assert_eq("field 10", 0.5, unk4, reader.prev + 28)
+        assert_eq("field 20", 0.0, unk2, reader.prev + 20)
+        assert_eq("field 24", 0.5, unk3, reader.prev + 24)
+        assert_eq("field 28", 0.5, unk4, reader.prev + 28)
 
         if MaterialFlag.Cycled(flag):
             assert_ne("cycle pointer", 0, cycle_ptr, reader.prev + 36)
@@ -195,17 +193,17 @@ def _read_materials_unset(reader: BinReader, mat_count: int, array_size: int) ->
             index2,
         ) = reader.read(MATERIAL_INFO)
 
-        assert_eq("field 1", 0, unk1, reader.prev + 0)
+        assert_eq("field 00", 0, unk1, reader.prev + 0)
         assert_eq("flag", MaterialFlag.Free, flag, reader.prev + 1)
         assert_eq("rgb", 0x0, rgb, reader.prev + 2)
         assert_eq("red", 0.0, red, reader.prev + 4)
         assert_eq("green", 0.0, green, reader.prev + 8)
         assert_eq("blue", 0.0, blue, reader.prev + 12)
         assert_eq("texture", 0, texture, reader.prev + 16)
-        assert_eq("field 8", 0.0, unk2, reader.prev + 20)
-        assert_eq("field 9", 0.0, unk3, reader.prev + 24)
-        assert_eq("field 10", 0.0, unk4, reader.prev + 28)
-        assert_eq("field 11", 0, unk5, reader.prev + 32)
+        assert_eq("field 20", 0.0, unk2, reader.prev + 20)
+        assert_eq("field 24", 0.0, unk3, reader.prev + 24)
+        assert_eq("field 28", 0.0, unk4, reader.prev + 28)
+        assert_eq("field 32", 0, unk5, reader.prev + 32)
         assert_eq("cycle pointer", 0, cycle_ptr, reader.prev + 36)
 
         expected1 = i - 1
@@ -224,7 +222,7 @@ def _read_materials(
 ) -> Tuple[int, List[Material]]:
     (array_size, mat_count, index_max, mat_unknown) = reader.read(MATERIAL_HEADER)
     assert_eq("index max", mat_count, index_max, reader.prev + 8)
-    assert_eq("field 4", mat_count - 1, mat_unknown, reader.prev + 12)
+    assert_eq("field 12", mat_count - 1, mat_unknown, reader.prev + 12)
 
     materials = _read_materials_set(reader, mat_count, texture_count)
     _read_materials_unset(reader, mat_count, array_size)
@@ -236,12 +234,12 @@ def _read_materials(
                 CYCLE_HEADER
             )
 
-            assert_in("field 1", (0, 1), unk1, reader.prev + 0)
-            # field 2
-            assert_eq("field 3", 0, unk3, reader.prev + 8)
-            assert_ne("field 4", 0, unk4, reader.prev + 12)
-            assert_eq("field 6", cycle_count, unk6, reader.prev + 20)
-            assert_ne("field 7", 0, unk7, reader.prev + 24)
+            assert_in("field 00", (0, 1), unk1, reader.prev + 0)
+            # field 04
+            assert_eq("field 08", 0, unk3, reader.prev + 8)
+            assert_ne("field 12", 0, unk4, reader.prev + 12)
+            assert_eq("field 20", cycle_count, unk6, reader.prev + 20)
+            assert_ne("field 24", 0, unk7, reader.prev + 24)
 
             cycle_textures = reader.read(Struct(f"<{cycle_count}I"))
 
@@ -271,11 +269,7 @@ def read_gamez(data: bytes) -> GameZ:
 
     assert_eq("signature", SIGNATURE, signature, reader.prev + 0)
     assert_eq("version", VERSION, version, reader.prev + 4)
-
-    if texture_count > 4096:
-        raise Mech3ParseError(
-            f"Expected texture count to be less than 4096, but was {texture_count!r} (at {reader.prev + 9})"
-        )
+    assert_lt("texture count", 4096, texture_count, reader.prev + 8)
 
     assert_eq("texture offset", texture_offset, reader.offset, reader.offset)
     textures = _read_textures(reader, texture_count)
