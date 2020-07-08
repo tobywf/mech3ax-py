@@ -15,7 +15,13 @@ from ..errors import (
     assert_eq,
     assert_in,
 )
-from .colors import rgb565to888, rgb888to565, rgb_to_palette, simple_alpha565
+from .colors import (
+    check_palette,
+    rgb565to888,
+    rgb888to565,
+    rgb_to_palette,
+    simple_alpha565,
+)
 from .utils import BinReader, ascii_zterm
 
 TEX_HEADER = Struct("<6I")
@@ -122,9 +128,7 @@ def _validate_texture_info(
     return flag
 
 
-def _read_texture(  # pylint: disable=too-many-locals
-    reader: BinReader, name: str, do_stretch: bool
-) -> DecodedTexture:
+def _read_texture(reader: BinReader, name: str, do_stretch: bool) -> DecodedTexture:
     flag_raw, width, height, zero, palette_count, stretch = reader.read(TEX_INFO)
 
     LOG.debug(
@@ -150,21 +154,24 @@ def _read_texture(  # pylint: disable=too-many-locals
     has_simple_alpha = TextureFlag.HasAlpha(flag) and not has_full_alpha
 
     if palette_count == 0:
-        pixels = unpack_from(f"<{size}H", reader.data, reader.offset)
-        reader.offset += size * 2
+        image_data = reader.read_bytes(size * 2)
+
         if has_simple_alpha:
+            pixels = unpack_from(f"<{size}H", image_data, 0)
             alpha_data = simple_alpha565(pixels)
-        image_data = rgb565to888(pixels)
+
+        image_data = rgb565to888(image_data)
     else:
         image_data = reader.read_bytes(size)
-        in_range = all(index < palette_count for index in image_data)
-        assert_eq(
-            "image data (palette) in range",
-            True,
-            in_range,
-            reader.prev,
-            Mech3TextureError,
-        )
+        if palette_count < 256:
+            in_range = check_palette(palette_count, image_data)
+            assert_eq(
+                "image data (palette) in range",
+                True,
+                in_range,
+                reader.prev,
+                Mech3TextureError,
+            )
         # if a palette image has simple alpha, then it would have to be constructed
         # after the palette data is loaded. however, this never seems to happen
         assert_eq(
@@ -180,11 +187,10 @@ def _read_texture(  # pylint: disable=too-many-locals
         img = Image.frombytes("RGB", (width, height), image_data)
     else:
         LOG.debug("Reading palette data at %d", reader.offset)
-        colors = unpack_from(f"<{palette_count}H", reader.data, reader.offset)
-        reader.offset += palette_count * 2
+        palette_data = reader.read_bytes(palette_count * 2)
+        palette_data = rgb565to888(palette_data)
 
         img = Image.frombytes("P", (width, height), image_data)
-        palette_data = rgb565to888(colors)
         img.putpalette(palette_data)
 
         if alpha_data:
@@ -278,13 +284,18 @@ def _convert_textures(
             assert_eq(
                 "PIL palette size", 256 * 3, len(palette), name, Mech3InternalError
             )
-            real_palette = palette[:component_count]
+            real_palette = bytes(palette[:component_count])
             palette_data = rgb888to565(real_palette)
 
-        in_range = all(index < texture.palette_count for index in image_data)
-        assert_eq(
-            "image data (palette) in range", True, in_range, name, Mech3InternalError,
-        )
+        if texture.palette_count < 256:
+            in_range = check_palette(texture.palette_count, image_data)
+            assert_eq(
+                "image data (palette) in range",
+                True,
+                in_range,
+                name,
+                Mech3InternalError,
+            )
     else:
         expected_mode = "RGBA" if TextureFlag.HasAlpha(texture.flag) else "RGB"
         assert_eq("image mode", expected_mode, mode, name, Mech3TextureError)

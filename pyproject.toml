@@ -15,6 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
 ]
+build = "build.py"
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -29,6 +30,7 @@ mypy = "^0.782"
 isort = {extras = ["pyproject"], version = "^4.3.21"}
 pylint = {extras = ["toml"], version = "^2.5.3"}
 coverage = "^5.2"
+py-spy = "^0.3.3"
 
 [tool.poetry.scripts]
 mech3_from_zbd = "mech3ax.convert.cli:main_from_zbd"

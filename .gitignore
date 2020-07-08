@@ -130,3 +130,5 @@ README.html
 output/
 poetry.lock
 scratch/
+# py-spy
+test.svg

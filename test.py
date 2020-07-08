@@ -226,9 +226,9 @@ def main():
     # tester.test_sounds()
     # tester.test_interp()
     # tester.test_resources()
-    # tester.test_textures()
+    tester.test_textures()
     # tester.test_reader()
-    tester.test_mechlib()
+    # tester.test_mechlib()
     # tester.test_motion()
     # tester.test_gamez()
 
