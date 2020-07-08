@@ -15,12 +15,12 @@ Obviously, this is an unofficial fan effort and not connected to the developers 
 - All messages extracted from `Mech3Msg.dll`
 - Game engine files (`reader*.zbd`) can be converted binary-accurately
 - Animations (`motion.zbd`) can be converted binary-accurately. However, because the model data is not very well understood, applying the animations isn't perfect. [Some limbs have incorrect translations](https://github.com/tobywf/mech3ax/issues/2)
-- 'mech models from `mechlib.zbd`, as well as the material index
+- 'mech models from `mechlib.zbd`, as well as the material index can be converted binary-accurately
 
 Not supported (yet?):
 
+- `gamez.zbd` files (in progress!)
 - `anim.zbd` files
-- `gamez.zbd` files
 - The Pirate's Moon expansions ([GitHub issue](https://github.com/tobywf/mech3ax/issues/1))
 - The demo likely won't ever be supported, because it uses different versions/data structures
 

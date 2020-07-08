@@ -21,7 +21,7 @@ from ..parse.mechlib import (
     read_version,
     write_materials,
 )
-from ..parse.models import read_model
+from ..parse.models import Node, read_model, write_model
 from .archive import MANIFEST, ArchiveInfo, ArchiveManifest, Renamer
 from .utils import dir_exists, output_resolve, path_exists
 
@@ -49,14 +49,9 @@ def mechlib_read(z: ZipFile, entry: ArchiveEntry, renamer: Renamer) -> ArchiveIn
         z.writestr(MATERIALS, materials.json(exclude_defaults=True, indent=2))
         return ArchiveInfo.from_entry(entry, MATERIALS)
 
-    rename = entry.name.replace(".flt", ".json")
-    model = read_model(entry.data)
-    z.writestr(rename, model.json(indent=2))
-
-    rename = renamer(entry.name)
-
-    with z.open(rename, mode="w") as fb:
-        fb.write(entry.data)
+    rename = renamer(entry.name.replace(".flt", ".json"))
+    root = read_model(entry.data)
+    z.writestr(rename, root.json(indent=2))
 
     return ArchiveInfo.from_entry(entry, rename)
 
@@ -92,14 +87,14 @@ def mechlib_write(z: ZipFile, info: ArchiveInfo) -> ArchiveEntry:
             write_materials(fb, materials.__root__)
             return info.to_entry(fb.getvalue())
 
-    # with z.open(info.rename) as ft:
-    #     model = json.load(ft)
+    with z.open(info.rename) as ft:
+        root = Node.parse_raw(ft.read())
 
-    # with BytesIO() as fb:
-    #     write_model(fb, model)
-    #     data = fb.getvalue()
+    with BytesIO() as fb:
+        write_model(fb, root)
+        data = fb.getvalue()
 
-    return info.to_entry(z.read(info.rename))
+    return info.to_entry(data)
 
 
 def mechlib_zip_to_zbd(input_zip: Path, output_zbd: Path) -> None:
