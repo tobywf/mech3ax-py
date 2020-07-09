@@ -132,3 +132,4 @@ poetry.lock
 scratch/
 # py-spy
 test.svg
+test/

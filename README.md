@@ -73,14 +73,14 @@ I'm still working on adding more formats to this CLI.
 
 Blender 2.80 or higher is required. Blender's APIs do change, so you may need to use a version closely matching that one. It will definitely *not* work with versions below 2.80, but if you have success running it with newer versions, let me know so I can update this read-me.
 
-This is a bit tricky to get running, because of the dependencies. Assuming Blender is installed, and you have extracted the models and material index to `mechlib/`, and `rmechtex.zbd` to `mechtex/`, you can run the script like so:
+This is a bit tricky to get running, because of the dependencies. Assuming Blender is installed, and you have extracted the mechlib files and mech textures to the same directory, you can run:
 
 ```bash
 blender \
     --background \
     --factory-startup \
     --python model2blend.py \
-    -- mechlib/mech_annihilator.json mechtex/
+    -- dir_with_mechlib_zip_and_rmechtex_zip/ "madcat"
 ```
 
 This also assumes the Blender executable can be found. Your install location may vary, but here's some general instructions. For macOS (and Linux), this can be achieved by an alias in your shell's profile, e.g. `.bashrc`:
