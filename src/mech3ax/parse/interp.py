@@ -7,7 +7,7 @@ from typing import BinaryIO, Iterable, Sequence
 from pydantic import BaseModel
 
 from ..errors import Mech3ParseError, assert_eq
-from .utils import UINT32, BinReader, ascii_zterm
+from .utils import UINT32, BinReader, ascii_zterm_padded
 
 INTERP_HEADER = Struct("<3I")
 INTERP_ENTRY = Struct("<120s 2I")
@@ -59,7 +59,7 @@ def read_interp(data: bytes) -> Iterable[Script]:
     for i in range(count):
         LOG.debug("Reading entry %d at %d", i, reader.offset)
         raw_name, last_modified, start = reader.read(INTERP_ENTRY)
-        name = ascii_zterm(raw_name)
+        name = ascii_zterm_padded(raw_name)
         timestamp = datetime.fromtimestamp(last_modified, timezone.utc)
         script_info.append((name, timestamp, start))
 

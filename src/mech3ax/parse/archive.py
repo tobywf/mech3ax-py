@@ -16,7 +16,7 @@ from struct import Struct
 from typing import BinaryIO, Iterable, Union
 
 from ..errors import Mech3ArchiveError, assert_eq
-from .utils import BinReader, ascii_zterm
+from .utils import BinReader, ascii_zterm_padded
 
 TOC_FOOTER = Struct("<2I")
 TOC_ENTRY = Struct("<2I 64s I 64s Q")
@@ -81,7 +81,7 @@ def read_archive(data: bytes) -> Iterable[ArchiveEntry]:
         LOG.debug("Reading entry %d at %d", i, reader.offset)
         start, length, raw_name, flag, comment, filetime = reader.read(TOC_ENTRY)
         write_time = filetime_to_datetime(filetime)
-        name = ascii_zterm(raw_name)
+        name = ascii_zterm_padded(raw_name)
         end = start + length
         LOG.debug("Entry '%s', data from %d to %d", name, start, end)
         yield ArchiveEntry(

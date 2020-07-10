@@ -3,19 +3,60 @@ from typing import Any, Tuple
 
 UINT32 = Struct("<I")
 
+DEFAULT_NODE_NAME = b"Default_node_name"
 
-def ascii_zterm(buffer: bytes) -> str:
+
+def ascii_zterm_padded(buf: bytes) -> str:
     """Return a string from an ASCII-encoded, zero-terminated buffer.
 
-    The first null character is searched for. Any data following the terminator
-    is discarded.
+    The first null character is searched for. Data following the terminator
+    is verified as further null characters.
 
     :raises ValueError: If no null character was found in the buffer.
+    :raises ValueError: If unexpected characters follow the terminator.
+    :raises UnicodeDecodeError: If the string is not ASCII-encoded.
     """
-    null_index = buffer.find(b"\0")
+    null_index = buf.find(b"\0")
     if null_index < 0:  # pragma: no cover
         raise ValueError("Null terminator not found")
-    return buffer[:null_index].decode("ascii")
+
+    if not all(c == 0 for c in buf[null_index:]):  # pragma: no cover
+        raise ValueError("Data after first null terminator")
+    return buf[:null_index].decode("ascii")
+
+
+def ascii_zterm_node_name(buf: bytes) -> str:
+    """Return a string from an ASCII-encoded, zero-terminated buffer.
+
+    The first null character is searched for. Data following the terminator
+    is verified as the default node name followed by null characters.
+
+    :raises ValueError: If no null character was found in the buffer.
+    :raises ValueError: If unexpected characters follow the terminator.
+    :raises UnicodeDecodeError: If the string is not ASCII-encoded.
+    """
+    null_index = buf.find(b"\0")
+    if null_index < 0:  # pragma: no cover
+        raise ValueError("Null terminator not found")
+
+    compare = bytearray(len(buf))
+    compare[: len(DEFAULT_NODE_NAME)] = DEFAULT_NODE_NAME
+    compare[: null_index + 1] = buf[: null_index + 1]
+
+    if buf != compare:  # pragma: no cover
+        raise ValueError("Data after first null terminator")
+    return buf[:null_index].decode("ascii")
+
+
+def pack_node_name(name: str, length: int) -> bytes:
+    # assume length > len(DEFAULT_NODE_NAME)
+    pack = bytearray(length)
+    pack[: len(DEFAULT_NODE_NAME)] = DEFAULT_NODE_NAME
+    name_raw = name.encode("ascii")
+    offset = len(name_raw)
+    pack[:offset] = name_raw
+    pack[offset] = 0
+    return bytes(pack)
 
 
 class BinReader:

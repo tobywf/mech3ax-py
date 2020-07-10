@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 from pydantic import BaseModel
 
 from ..errors import Mech3ParseError, assert_eq, assert_in, assert_lt, assert_ne
-from .utils import BinReader, ascii_zterm
+from .utils import BinReader
 
 SIGNATURE = 0x02971222
 VERSION = 27
@@ -69,14 +69,44 @@ class Material(BaseModel):
 
 class GameZ(BaseModel):
     textures: List[str]
+    suffixes: List[bytes]
     material_array_size: int
     materials: List[Material]
 
 
-def _read_textures(reader: BinReader, count: int) -> List[str]:
+def ascii_zterm_suffix(buf: bytes) -> Tuple[str, bytes]:
+    """Return a string from an ASCII-encoded, zero-terminated buffer.
+
+    The first null character is searched for. Data following the terminator
+    is verified as the suffix followed by null characters.
+
+    :raises ValueError: If no null character was found in the buffer.
+    :raises ValueError: If unexpected characters follow the terminator.
+    :raises UnicodeDecodeError: If the string is not ASCII-encoded.
+    """
+    null_index = buf.find(b"\0")
+    if null_index < 0:  # pragma: no cover
+        raise ValueError("Null terminator not found")
+
+    # they used a "trick" to encode the texture names: replace the '.' in filenames
+    # with a null character. however, some texture names have no suffix.
+    # additionally, for long filenames, the suffix is cut off
+    for suffix in (b"tif", b"TIF", b""):
+        compare = bytearray(max(len(buf), null_index + len(suffix)))
+        compare[: null_index + 1] = buf[: null_index + 1]
+        compare[null_index + 1 : null_index + len(suffix) + 1] = suffix
+
+        if buf == bytes(compare[: len(buf)]):
+            return (buf[:null_index].decode("ascii"), suffix)
+
+    raise ValueError("No match for suffixes")
+
+
+def _read_textures(reader: BinReader, count: int) -> Tuple[List[str], List[bytes]]:
     textures = []
+    suffixes = []
     for _ in range(count):
-        prev_ptr, unknown, name, used, index, next_ptr = reader.read(TEXTURE_INFO)
+        prev_ptr, unknown, name_raw, used, index, next_ptr = reader.read(TEXTURE_INFO)
         # a pointer to the previous texture in the global array
         assert_eq("prev ptr", 0, prev_ptr, reader.prev + 0)
         # a non-zero value here causes additional dynamic code to be called
@@ -88,8 +118,10 @@ def _read_textures(reader: BinReader, count: int) -> List[str]:
         assert_eq("index", 0, index, reader.prev + 32)
         # a pointer to the next texture in the global array
         assert_eq("next ptr", 0xFFFFFFFF, next_ptr, reader.prev + 36)
-        textures.append(ascii_zterm(name))
-    return textures
+        name, suffix = ascii_zterm_suffix(name_raw)
+        textures.append(name)
+        suffixes.append(suffix)
+    return textures, suffixes
 
 
 def _read_materials_set(  # pylint: disable=too-many-locals
@@ -272,11 +304,14 @@ def read_gamez(data: bytes) -> GameZ:
     assert_lt("texture count", 4096, texture_count, reader.prev + 8)
 
     assert_eq("texture offset", texture_offset, reader.offset, reader.offset)
-    textures = _read_textures(reader, texture_count)
+    textures, suffixes = _read_textures(reader, texture_count)
     assert_eq("material offset", material_offset, reader.offset, reader.offset)
     material_array_size, materials = _read_materials(reader, texture_count)
     assert_eq("model3d offset", model3d_offset, reader.offset, reader.offset)
 
     return GameZ(
-        textures=textures, material_array_size=material_array_size, materials=materials,
+        textures=textures,
+        suffixes=suffixes,
+        material_array_size=material_array_size,
+        materials=materials,
     )

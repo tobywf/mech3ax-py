@@ -22,7 +22,7 @@ from .colors import (
     rgb_to_palette,
     simple_alpha565,
 )
-from .utils import BinReader, ascii_zterm
+from .utils import BinReader, ascii_zterm_padded
 
 TEX_HEADER = Struct("<6I")
 assert TEX_HEADER.size == 24, TEX_HEADER.size
@@ -239,7 +239,7 @@ def read_textures(data: bytes, do_stretch: bool = True) -> Iterable[DecodedTextu
         name, start, palette_index = reader.read(TEX_ENTRY)
         # global palette support isn't implemented
         assert_eq("global palette index", -1, palette_index, reader.offset - 4)
-        name = ascii_zterm(name)
+        name = ascii_zterm_padded(name)
         table.append((name, start))
 
     for name, start in table:

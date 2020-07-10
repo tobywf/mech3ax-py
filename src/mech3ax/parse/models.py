@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 import logging
-from struct import Struct, pack
+from struct import Struct
 from typing import BinaryIO, List, Optional, Tuple, cast
 
 from pydantic import BaseModel
 
 from ..errors import assert_eq, assert_gt, assert_in, assert_lt, assert_ne
-from .utils import UINT32, BinReader, ascii_zterm
+from .utils import UINT32, BinReader, ascii_zterm_node_name, pack_node_name
 
 VEC_3D = Struct("<3f")
 assert VEC_3D.size == 12, VEC_3D.size
@@ -365,7 +365,7 @@ def _read_node(reader: BinReader) -> Node:
     LOG.debug("Read node")
 
     return Node(
-        name=ascii_zterm(part_name),
+        name=ascii_zterm_node_name(part_name),
         bitfield=bitfield_lower,
         object3d=object3d,
         mesh=mesh,
@@ -487,14 +487,9 @@ def _write_object3d(f: BinaryIO, object3d: Object3D) -> None:
 def _write_node(f: BinaryIO, node: Node, is_child: bool = True) -> None:
     LOG.debug("Writing node...")
 
-    raw_name = node.name.encode("ascii")
-    merged_name = bytearray(pack("<36s", b"Default_node_name"))
-    merged_name[0 : len(raw_name)] = raw_name
-    merged_name[len(raw_name)] = 0
-
     # fmt: off
     values = NODE.pack(
-        bytes(merged_name),
+        pack_node_name(node.name, 36),
         node.bitfield | 0x3080000,
         0, 1, 0xFF, 0, 0, 0,
         5, node.node_ptr,
