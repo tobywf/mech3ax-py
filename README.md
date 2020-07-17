@@ -30,7 +30,7 @@ Additionally, there is a stand-alone script that can convert extracted models to
 
 **You will need a copy of the game. Do not ask me for an (illegal) copy.**
 
-Python 3.7 or higher is required.
+Python 3.8 or higher is required.
 
 Dependencies are managed via [poetry](https://python-poetry.org/). To install all dependencies, use:
 

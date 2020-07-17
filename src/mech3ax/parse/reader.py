@@ -1,5 +1,6 @@
 import logging
 from enum import IntEnum
+from itertools import chain
 from struct import Struct
 from typing import Any, BinaryIO, Sequence
 
@@ -7,6 +8,7 @@ from ..errors import Mech3InternalError, Mech3ParseError, assert_eq, assert_in
 from .utils import UINT32, BinReader
 
 FLOAT = Struct("<f")
+SINT32 = Struct("<i")
 
 LOG = logging.getLogger(__name__)
 
@@ -26,7 +28,8 @@ def _read_node(reader: BinReader) -> Any:
     assert_in("node type", NODE_TYPES, node_type, reader.prev)
 
     if node_type == NodeType.Int:
-        return reader.read_u32()
+        (value,) = reader.read(SINT32)
+        return value
 
     if node_type == NodeType.Float:
         (value,) = reader.read(FLOAT)
@@ -46,8 +49,17 @@ def _read_node(reader: BinReader) -> Any:
 
         values = [_read_node(reader) for _ in range(count)]
 
-        # lists cannot be turned into dictionaries, since there can be
-        # duplicate keys
+        # special munging to turn a list of keys and values into a dict
+        is_even = count % 2 == 0
+        if is_even:
+            keys = values[::2]
+            has_keys = all(isinstance(s, str) for s in keys)
+            if has_keys:
+                has_uniq = len(set(keys)) == len(keys)
+                if has_uniq:
+                    it = iter(values)
+                    return dict(zip(it, it))
+
         return values
 
     raise Mech3InternalError("node type")  # pragma: no cover
@@ -90,15 +102,17 @@ def write_reader(f: BinaryIO, root: Any) -> None:
 
         if isinstance(node, int):
             f.write(UINT32.pack(NodeType.Int))
-            f.write(UINT32.pack(node))
+            f.write(SINT32.pack(node))
         elif isinstance(node, float):
             f.write(UINT32.pack(NodeType.Float))
             f.write(FLOAT.pack(node))
         elif isinstance(node, str):
-            node = node.encode("ascii")
-            _write_bytes(node)
+            _write_bytes(node.encode("ascii"))
         elif isinstance(node, list):
             _write_list(node)
+        elif isinstance(node, dict):
+            items = list(chain.from_iterable(node.items()))
+            _write_list(items)
         elif node is None:
             _write_list([])
         else:  # pragma: no cover
