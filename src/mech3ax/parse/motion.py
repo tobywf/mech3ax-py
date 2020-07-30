@@ -1,6 +1,6 @@
 import logging
 from struct import Struct
-from typing import BinaryIO, Dict, List, Tuple
+from typing import BinaryIO, Dict, List, Tuple, cast
 
 from pydantic import BaseModel
 
@@ -52,9 +52,11 @@ def read_motion(data: bytes) -> Motion:
         # 8 = translation, 4 = rotation, 2 = scaling (never in motion.zbd)
         assert_eq("flag", 12, flag, reader.prev)
 
-        translations = [reader.read(VECTOR) for _ in range(frame_count)]
+        translations = [cast(Vector, reader.read(VECTOR)) for _ in range(frame_count)]
         # scaling would be read here (never in motion.zbd)
-        rotations = [reader.read(QUATERNION) for _ in range(frame_count)]
+        rotations = [
+            cast(Quaternion, reader.read(QUATERNION)) for _ in range(frame_count)
+        ]
 
         # interleave translation and rotation for easy frame access
         parts[part_name] = list(zip(translations, rotations))

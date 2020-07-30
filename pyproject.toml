@@ -12,13 +12,13 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
 ]
 build = "build.py"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 pefile = "2019.4.18"
 Pillow = "^7.1.2"
 pydantic = "^1.5.1"
@@ -85,7 +85,7 @@ fixme,
 """
 
 [tool.pylint.BASIC]
-good-names = "_,e,ex,f,ft,fb,fp,i,it,j,u,v,x,y,z,uv,tx,ty,tz,rx,ry,rz,bm,pe,T"
+good-names = "_,e,ex,f,ft,fb,fp,i,it,j,u,v,x,y,z,uv,tx,ty,tz,rx,ry,rz,sx,sy,sz,bm,pe,T"
 
 [tool.pylint.FORMAT]
 indent-string = "    "

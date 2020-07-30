@@ -195,14 +195,14 @@ def _read_mesh(reader: BinReader) -> Mesh:
     assert_gt("vertex count", 0, vertex_count, reader.prev + 20)
     assert_ne("vertex ptr", 0, vertex_ptr, reader.prev + 56)
 
-    vertices = [reader.read(VEC_3D) for _ in range(vertex_count)]
+    vertices = [cast(Vec3, reader.read(VEC_3D)) for _ in range(vertex_count)]
 
     if normal_count == 0:
         assert_eq("normal ptr", 0, normal_ptr, reader.prev + 60)
     else:
         assert_ne("normal ptr", 0, normal_ptr, reader.prev + 60)
 
-    normals = [reader.read(VEC_3D) for _ in range(normal_count)]
+    normals = [cast(Vec3, reader.read(VEC_3D)) for _ in range(normal_count)]
 
     assert_eq("morph count", 0, morph_count, reader.prev + 28)
     assert_eq("morph ptr", 0, morph_ptr, reader.prev + 68)

@@ -13,7 +13,7 @@ from PIL import Image
 from pydantic import BaseModel
 
 from ..parse.textures import DecodedTexture, TextureFlag, read_textures, write_textures
-from .archive import Base64
+from ..serde import Base64
 from .utils import dir_exists, output_resolve, path_exists
 
 MANIFEST = "manifest.json"
@@ -80,7 +80,7 @@ def textures_zbd_to_zip(
                 flags=TextureFlagExpander.from_flag(texture.flag),
                 stretch=texture.stretch,
                 palette_count=texture.palette_count,
-                palette_data=texture.palette_data,
+                palette_data=Base64.from_optional(texture.palette_data),
             )
             textures.append(info)
 

@@ -4,6 +4,7 @@ The conversion is lossless and produces a binary accurate output by default.
 """
 import logging
 from argparse import Namespace, _SubParsersAction
+from datetime import datetime, timezone
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -38,7 +39,12 @@ def sounds_zbd_to_zip(
 
                 rename = renamer(name)
                 z.writestr(rename, path.read_bytes())
-                info = ArchiveInfo(name=path.name, rename=rename, start=end + i)
+                info = ArchiveInfo(
+                    name=path.name,
+                    rename=rename,
+                    start=end + i,
+                    write_time=datetime.now(timezone.utc),
+                )
                 sounds.append(info)
 
         manifest = ArchiveManifest(__root__=sounds)

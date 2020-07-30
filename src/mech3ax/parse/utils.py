@@ -21,7 +21,7 @@ def ascii_zterm_padded(buf: bytes) -> str:
         raise ValueError("Null terminator not found")
 
     if not all(c == 0 for c in buf[null_index:]):  # pragma: no cover
-        raise ValueError("Data after first null terminator")
+        raise ValueError(f"Data after first null terminator ({buf[null_index:]!r})")
     return buf[:null_index].decode("ascii")
 
 
@@ -44,7 +44,7 @@ def ascii_zterm_node_name(buf: bytes) -> str:
     compare[: null_index + 1] = buf[: null_index + 1]
 
     if buf != compare:  # pragma: no cover
-        raise ValueError("Data after first null terminator")
+        raise ValueError(f"Data after first null terminator ({buf[null_index:]!r})")
     return buf[:null_index].decode("ascii")
 
 
