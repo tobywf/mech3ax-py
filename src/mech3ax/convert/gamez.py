@@ -38,7 +38,10 @@ def gamez_from_zbd_subparser(subparsers: _SubParsersAction) -> None:
 #     gamez_zip_to_zbd(args.input_zip, output_zbd)
 
 
-# def gamez_to_zbd_subparser(subparsers: _SubParsersAction) -> None:
+def gamez_to_zbd_subparser(_subparsers: _SubParsersAction) -> None:
+    pass
+
+
 #     parser = subparsers.add_parser("gamez", description=__doc__)
 #     parser.set_defaults(command=gamez_to_zbd_command)
 #     parser.add_argument("input_zip", type=path_exists)

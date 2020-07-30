@@ -48,6 +48,22 @@ def ascii_zterm_node_name(buf: bytes) -> str:
     return buf[:null_index].decode("ascii")
 
 
+def ascii_zterm_partition(buf: bytes) -> Tuple[str, bytes]:
+    """Return a string and trailing data from an ASCII-encoded, zero-terminated
+    buffer.
+
+    The first null character is searched for. Data following the terminator
+    is returned.
+
+    :raises ValueError: If no null character was found in the buffer.
+    :raises UnicodeDecodeError: If the string is not ASCII-encoded.
+    """
+    null_index = buf.find(b"\0")
+    if null_index < 0:  # pragma: no cover
+        raise ValueError("Null terminator not found")
+    return buf[:null_index].decode("ascii"), buf[null_index + 1 :]
+
+
 def pack_node_name(name: str, length: int) -> bytes:
     # assume length > len(DEFAULT_NODE_NAME)
     pack = bytearray(length)

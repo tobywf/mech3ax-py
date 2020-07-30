@@ -1,4 +1,5 @@
-from typing import Any, Container, Type, TypeVar, Union
+from contextlib import contextmanager
+from typing import Any, Container, Iterator, Type, TypeVar, Union
 
 from typing_extensions import Protocol
 
@@ -9,7 +10,13 @@ class Comparable(Protocol):
     def __lt__(self: T, other: T) -> bool:
         pass
 
+    def __le__(self: T, other: T) -> bool:
+        pass
+
     def __gt__(self: T, other: T) -> bool:
+        pass
+
+    def __ge__(self: T, other: T) -> bool:
         pass
 
 
@@ -83,6 +90,17 @@ def assert_lt(
     _assert_base(result, "<", name, expected, actual, location, error_class)
 
 
+def assert_le(
+    name: str,
+    expected: T,
+    actual: T,
+    location: Union[int, str],
+    error_class: Type[Mech3Error] = Mech3ParseError,
+) -> None:
+    result = actual <= expected
+    _assert_base(result, "<=", name, expected, actual, location, error_class)
+
+
 def assert_gt(
     name: str,
     expected: T,
@@ -94,6 +112,17 @@ def assert_gt(
     _assert_base(result, ">", name, expected, actual, location, error_class)
 
 
+def assert_ge(
+    name: str,
+    expected: T,
+    actual: T,
+    location: Union[int, str],
+    error_class: Type[Mech3Error] = Mech3ParseError,
+) -> None:
+    result = actual >= expected
+    _assert_base(result, ">=", name, expected, actual, location, error_class)
+
+
 def assert_in(
     name: str,
     expected: Container[T],
@@ -103,3 +132,30 @@ def assert_in(
 ) -> None:
     result = actual in expected
     _assert_base(result, "in", name, expected, actual, location, error_class)
+
+
+def assert_between(  # pylint: disable=too-many-arguments
+    name: str,
+    expected_low: T,
+    expected_high: T,
+    actual: T,
+    location: Union[int, str],
+    error_class: Type[Mech3Error] = Mech3ParseError,
+) -> None:
+    if expected_low > actual or actual > expected_high:
+        raise error_class(
+            f"{name}: {expected_low!r} <= {actual!r} <= {expected_high!r} (at {location})"
+        )
+
+
+@contextmanager
+def assert_ascii(
+    name: str,
+    actual: bytes,
+    location: Union[int, str],
+    error_class: Type[Mech3Error] = Mech3ParseError,
+) -> Iterator[None]:
+    try:
+        yield
+    except UnicodeDecodeError:
+        raise error_class(f"{name}: {actual!r} is not ASCII (at {location})")

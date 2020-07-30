@@ -1,6 +1,8 @@
 import argparse
 import sys
 
+from .anim import anim_from_zbd_subparser, anim_to_zbd_subparser
+from .gamez import gamez_from_zbd_subparser, gamez_to_zbd_subparser
 from .interp import interp_from_zbd_subparser, interp_to_zbd_subparser
 from .mechlib import mechlib_from_zbd_subparser, mechlib_to_zbd_subparser
 from .motion import motion_from_zbd_subparser, motion_to_zbd_subparser
@@ -19,6 +21,8 @@ def main_from_zbd() -> None:
 
     parser.set_defaults(command=no_command)
     subparsers = parser.add_subparsers(dest="subparser_name")
+    anim_from_zbd_subparser(subparsers)
+    gamez_from_zbd_subparser(subparsers)
     interp_from_zbd_subparser(subparsers)
     mechlib_from_zbd_subparser(subparsers)
     motion_from_zbd_subparser(subparsers)
@@ -45,6 +49,8 @@ def main_to_zbd() -> None:
 
     parser.set_defaults(command=no_command)
     subparsers = parser.add_subparsers(dest="subparser_name")
+    anim_to_zbd_subparser(subparsers)
+    gamez_to_zbd_subparser(subparsers)
     interp_to_zbd_subparser(subparsers)
     mechlib_to_zbd_subparser(subparsers)
     motion_to_zbd_subparser(subparsers)
