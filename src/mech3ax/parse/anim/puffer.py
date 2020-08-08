@@ -374,26 +374,3 @@ class PufferState(ScriptObject):
             textures=textures,
             growth_factor=growth_factor,
         )
-
-    def __repr__(self) -> str:
-        return "\n".join(
-            [
-                f"{self._NAME}(",
-                f"  NAME={self.name!r},",
-                f"  PUFFER_STATE={self.puffer_state}, ACTIVE_STATE={self.active_state},",
-                f"  AT_NODE={self.at_node!r},",
-                f"  INTERVAL={self.interval},",
-                f"  LOCAL_VELOCITY={self.local_velocity},",
-                f"  WORLD_VELOCITY={self.world_velocity},",
-                f"  MIN_RANDOM_VELOCITY={self.min_random_velocity},",
-                f"  MAX_RANDOM_VELOCITY={self.max_random_velocity},",
-                f"  WORLD_ACCELERATION={self.world_acceleration},",
-                f"  SIZE_RANGE={self.size_range},",
-                f"  LIFETIME_RANGE={self.lifetime_range},",
-                f"  START_AGE_RANGE={self.start_age_range},",
-                f"  DEVIATION_DISTANCE={self.deviation_distance}, FRICTION={self.friction}, GROWTH_FACTOR={self.growth_factor},",
-                f"  FADE_RANGE={self.fade_range},",
-                f"  TEXTURES={self.textures},",
-                ")",
-            ]
-        )

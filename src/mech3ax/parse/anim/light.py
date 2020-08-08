@@ -221,23 +221,6 @@ class LightState(ScriptObject):
             diffuse=diffuse,
         )
 
-    def __repr__(self) -> str:
-        state_name = "ACTIVE" if self.active_state else "INACTIVE"
-        return "\n".join(
-            [
-                f"{self._NAME}(",
-                f"  NAME={self.name!r},",
-                f"  ACTIVE_STATE={state_name},",
-                f"  DIRECTIONAL={self.directional}, SATURATED={self.saturated},",
-                f"  SUBDIVIDE={self.subdivide}, STATIC={self.static},",
-                f"  AT_NODE={self.at_node!r},",
-                f"  RANGE={self.range},",
-                f"  COLOR={self.color},",
-                f"  AMBIENT={self.ambient}, DIFFUSE={self.diffuse},",
-                ")",
-            ]
-        )
-
 
 class LightAnimation(ScriptObject):
     _NAME: str = "LIGHT_ANIMATION"
@@ -308,16 +291,4 @@ class LightAnimation(ScriptObject):
             range=(range_min, range_max),
             color=(color_r, color_g, color_b),
             run_time=run_time,
-        )
-
-    def __repr__(self) -> str:
-        return "\n".join(
-            [
-                f"{self._NAME}(",
-                f"  NAME={self.name!r},",
-                f"  RANGE={self.range},",
-                f"  COLOR={self.color},",
-                f"  RUN_TIME={self.run_time},",
-                ")",
-            ]
         )

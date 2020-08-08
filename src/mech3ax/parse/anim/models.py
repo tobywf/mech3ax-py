@@ -109,6 +109,7 @@ SeqActivation = Union[Literal["NONE"], Literal["ON_CALL"]]
 
 
 class SeqDef(BaseModel):
+    name: str
     activation: SeqActivation = "NONE"
     script: List[ScriptItem]
     ptr: int
@@ -214,9 +215,6 @@ class AtNodeShort(BaseModel):
     ty: float = 0.0
     tz: float = 0.0
 
-    def __repr__(self) -> str:
-        return f"({self.node!r}, {self.tx}, {self.ty}, {self.tz})"
-
 
 class AtNodeLong(BaseModel):
     node: str
@@ -226,9 +224,6 @@ class AtNodeLong(BaseModel):
     rx: float = 0.0
     ry: float = 0.0
     rz: float = 0.0
-
-    def __repr__(self) -> str:
-        return f"({self.node!r}, {self.tx}, {self.ty}, {self.tz}, {self.rx}, {self.ry}, {self.rz})"
 
 
 AtNodeFlex = Union[None, AtNodeShort, AtNodeLong]

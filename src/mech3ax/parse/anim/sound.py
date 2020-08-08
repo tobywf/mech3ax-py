@@ -27,9 +27,6 @@ class Sound(ScriptObject):
         at_node = AtNodeShort(node=node, tx=tx, ty=ty, tz=tz)
         return cls(name=name, at_node=at_node)
 
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.name!r}, AT_NODE={self.at_node!r})"
-
 
 class SoundNode(ScriptObject):
     _NAME: str = "SOUND_NODE"
@@ -77,7 +74,3 @@ class SoundNode(ScriptObject):
             at_node = AtNodeShort(node=node, tx=tx, ty=ty, tz=tz)
 
         return cls(name=name, active_state=active_state == 1, at_node=at_node)
-
-    def __repr__(self) -> str:
-        state_name = "ACTIVE" if self.active_state else "INACTIVE"
-        return f"{self._NAME}(NAME={self.name!r}, ACTIVE_STATE={state_name}, AT_NODE={self.at_node!r})"

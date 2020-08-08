@@ -85,9 +85,6 @@ class Comparison(ScriptObject):
     def read(cls: Type[T], reader: BinReader, anim_def: AnimDef) -> T:
         raise NotImplementedError
 
-    def __repr__(self) -> str:
-        return f"{self._NAME}({self.lhs!r} <= {self.rhs.value!r})"
-
 
 IF_COND: Mapping[
     int, Tuple[str, Callable[[bytes], Tuple[Discriminator, RightHandSide]]]

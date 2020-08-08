@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from io import StringIO
 from struct import Struct
 from typing import List
 
@@ -18,7 +17,7 @@ assert SCRIPT_HEADER.size == 12, SCRIPT_HEADER.size
 
 
 def _parse_script(
-    reader: BinReader, anim_def: AnimDef, rel_end: int, f: StringIO
+    reader: BinReader, anim_def: AnimDef, rel_end: int
 ) -> List[ScriptItem]:
     LOG.debug("Reading script with length %d at %d", rel_end, reader.offset)
 
@@ -42,11 +41,6 @@ def _parse_script(
         base_model = OBJECT_REGISTRY_NUM[stype]
 
         obj = base_model.validate_and_read(reader, anim_def, actual_length)
-        if start_offset != StartOffset.Unset:
-            print(repr(obj), start_offset, start_time, file=f)
-        else:
-            print(repr(obj), file=f)
-
         item = ScriptItem(
             name=base_model._NAME,  # pylint: disable=protected-access
             item=obj,

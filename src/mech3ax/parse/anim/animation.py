@@ -155,19 +155,6 @@ class CallAnimation(ScriptObject):
             wait_for_completion=wait_for_completion,
         )
 
-    def __repr__(self) -> str:
-        at_node = f", AT_NODE={self.at_node!r}" if self.at_node else ""
-        with_node = f", WITH_NODE={self.with_node!r}" if self.with_node else ""
-        op_node = f", OPERAND_NODE={self.operand_node!r}" if self.operand_node else ""
-        wait_for = (
-            f", WAIT_FOR_COMPLETION={self.wait_for_completion}"
-            if self.wait_for_completion > -1
-            else ""
-        )
-        return (
-            f"{self._NAME}(NAME={self.name!r}{at_node}{with_node}{op_node}{wait_for})"
-        )
-
 
 class StopAnimation(ScriptObject):
     _NAME: str = "STOP_ANIMATION"
@@ -184,9 +171,6 @@ class StopAnimation(ScriptObject):
 
         assert_eq("sentinel", 0, sentinel, reader.prev + 32)
         return cls(name=name)
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.name!r})"
 
 
 class ResetAnimation(ScriptObject):
@@ -205,9 +189,6 @@ class ResetAnimation(ScriptObject):
         assert_eq("sentinel", 0, sentinel, reader.prev + 0)
         return cls(name=name)
 
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.name!r})"
-
 
 class InvalidateAnimation(ScriptObject):
     _NAME: str = "INVALIDATE_ANIMATION"
@@ -224,6 +205,3 @@ class InvalidateAnimation(ScriptObject):
 
         assert_eq("sentinel", 0, sentinel, reader.prev + 0)
         return cls(name=name)
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.name!r})"

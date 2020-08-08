@@ -25,9 +25,6 @@ class Loop(ScriptObject):
         assert_eq("field 6", 0, pad, reader.prev + 6)
         return cls(loop_count=loop_count)
 
-    def __repr__(self) -> str:
-        return f"{self._NAME}(LOOP_COUNT={self.loop_count})"
-
 
 class If(Comparison):
     _NAME: str = "IF"
@@ -64,9 +61,6 @@ class Else(ScriptObject):
     def read(cls, _reader: BinReader, _anim_def: AnimDef) -> Else:
         return cls()
 
-    def __repr__(self) -> str:
-        return f"{self._NAME}"
-
 
 class Endif(ScriptObject):
     _NAME: str = "ENDIF"
@@ -76,9 +70,6 @@ class Endif(ScriptObject):
     @classmethod
     def read(cls, _reader: BinReader, _anim_def: AnimDef) -> Endif:
         return cls()
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}"
 
 
 class Callback(ScriptObject):
@@ -94,6 +85,3 @@ class Callback(ScriptObject):
         anim_def.callback_count += 1
         (value,) = reader.read(cls._STRUCT)
         return cls(value=value)
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}(VALUE={self.value})"

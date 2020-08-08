@@ -395,26 +395,6 @@ class ObjectMotion(ScriptObject):
             run_time=run_time,
         )
 
-    def __repr__(self) -> str:
-        impact = " IMPACT_FORCE," if self.impact_force else ""
-        return "\n".join(
-            [
-                f"{self._NAME}(",
-                f"  NAME={self.node!r},{impact}",
-                f"  GRAVITY={self.gravity}",
-                f"  TRANSLATION_RANGE_MIN={self.translation_range_min},",
-                f"  TRANSLATION_RANGE_MAX={self.translation_range_max},",
-                f"  TRANSLATION={self.translation}",
-                f"  FORWARD_ROTATION={self.forward_rotation},",
-                f"  XYZ_ROTATION={self.xyz_rotation},",
-                f"  SCALE={self.scale},",
-                f"  BOUNCE_SEQUENCE={self.bounce_sequence},",
-                f"  BOUNCE_SOUNDS={self.bounce_sounds},",
-                f"  RUN_TIME={self.run_time},",
-                ")",
-            ]
-        )
-
 
 Vec3 = Tuple[float, float, float]
 
@@ -423,9 +403,6 @@ class Vec3FromTo(BaseModel):
     from_: Vec3
     to_: Vec3
     delta: Vec3
-
-    def __repr__(self) -> str:
-        return f"(FROM={self.from_}, TO={self.to_})"
 
 
 class ObjectMotionFromTo(ScriptObject):
@@ -564,23 +541,4 @@ class ObjectMotionFromTo(ScriptObject):
             rotate=rotate,
             scale=scale,
             run_time=run_time,
-        )
-
-    def __repr__(self) -> str:
-        if self.morph:
-            from_, to_, _ = self.morph  # pylint: disable=unpacking-non-sequence
-            morph = f"(FROM={from_}, TO={to_})"
-        else:
-            morph = "None"
-        return "\n".join(
-            [
-                f"{self._NAME}(",
-                f"  NAME={self.node!r},",
-                f"  MORPH={morph},",
-                f"  TRANSLATE={self.translate},",
-                f"  ROTATE={self.rotate},",
-                f"  SCALE={self.scale},",
-                f"  RUN_TIME={self.run_time},",
-                ")",
-            ]
         )

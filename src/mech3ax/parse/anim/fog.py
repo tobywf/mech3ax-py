@@ -64,6 +64,3 @@ class FogState(ScriptObject):
             altitude=(altitude_min, altitude_max),
             range=(range_min, range_max),
         )
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}(TYPE={self.fog_type}, COLOR={self.color}, ALTITUDE={self.altitude}, RANGE={self.range})"

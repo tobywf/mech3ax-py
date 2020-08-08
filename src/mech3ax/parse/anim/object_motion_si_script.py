@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from itertools import chain
 from math import cos, sin, sqrt
 from struct import Struct
 from typing import List, Optional, Tuple, Type, cast
@@ -152,17 +151,3 @@ class ObjectMotionSIScript(ScriptObject):
 
         assert_eq("motion script end", abs_end, reader.offset, reader.offset)
         return cls(index=index, frames=frames)
-
-    def __repr__(self) -> str:
-        return "\n".join(
-            chain(
-                [f"{self._NAME}(INDEX={self.index}, COUNT={len(self.frames)})"],
-                (
-                    (
-                        f"- FRAME={i}, START={frame.start:.5f}, END={frame.end:.5f}, "
-                        f"TRANSLATE={frame.translate}, ROTATE={frame.rotate}, SCALE={frame.scale}"
-                    )
-                    for i, frame in enumerate(self.frames)
-                ),
-            )
-        )

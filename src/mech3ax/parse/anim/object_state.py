@@ -37,10 +37,6 @@ class ObjectActiveState(ScriptObject):
         node = anim_def.get_node(node_index - 1, reader.prev + 4)
         return cls(node=node, state=state == 1)
 
-    def __repr__(self) -> str:
-        state_name = "ACTIVE" if self.state else "INACTIVE"
-        return f"{self._NAME}(NAME={self.node!r}, STATE={state_name})"
-
 
 class ObjectTranslateState(ScriptObject):
     _NAME: str = "OBJECT_TRANSLATE_STATE"
@@ -61,9 +57,6 @@ class ObjectTranslateState(ScriptObject):
             node = anim_def.get_node(node_index - 1, reader.prev + 16)
         return cls(node=node, state=(tx, ty, tz))
 
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.node!r}, STATE={self.state})"
-
 
 class ObjectScaleState(ScriptObject):
     _NAME: str = "OBJECT_SCALE_STATE"
@@ -78,9 +71,6 @@ class ObjectScaleState(ScriptObject):
         sx, sy, sz, node_index = reader.read(cls._STRUCT)
         node = anim_def.get_node(node_index - 1, reader.prev + 12)
         return cls(node=node, state=(sx, sy, sz))
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.node!r}, STATE={self.state})"
 
 
 RotationMode = Union[
@@ -133,15 +123,6 @@ class ObjectRotateState(ScriptObject):
 
         return cls(node=node, mode=mode, state=state)
 
-    def __repr__(self) -> str:
-        if self.mode == "ABSOLUTE":
-            return f"{self._NAME}(NAME={self.node!r}, STATE={self.state})"
-        if self.mode == "AT_NODE_XYZ":
-            return f"{self._NAME}(NAME={self.node!r}, AT_NODE_XYZ={INPUT_NODE!r})"
-        if self.mode == "AT_NODE_MATRIX":
-            return f"{self._NAME}(NAME={self.node!r}, AT_NODE_MATRIX={INPUT_NODE!r})"
-        raise ValueError(f"Unknown mode {self.mode}")
-
 
 class ObjectOpacityState(ScriptObject):
     _NAME: str = "OBJECT_OPACITY_STATE"
@@ -167,10 +148,6 @@ class ObjectOpacityState(ScriptObject):
             assert_eq("opacity", 0.0, opacity, reader.prev + 4)
         node = anim_def.get_node(node_index - 1, reader.prev + 8)
         return cls(node=node, is_set=is_set_raw == 1, state=state, opacity=opacity)
-
-    def __repr__(self) -> str:
-        state_name = "ON" if self.state else "OFF"
-        return f"{self._NAME}(NAME={self.node!r}, IS_SET={self.is_set}, STATE={state_name}, OPACITY={self.opacity})"
 
 
 class ObjectOpacityFromTo(ScriptObject):
@@ -212,15 +189,13 @@ class ObjectOpacityFromTo(ScriptObject):
             delta=delta,
         )
 
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.node!r}, OPACITY_FROM={self.opacity_from}, OPACITY_TO={self.opacity_to}, RUN_TIME={self.run_time})"
-
 
 class ObjectAddChild(ScriptObject):
     _NAME: str = "OBJECT_ADD_CHILD"
     _NUMBER: int = 15
     _STRUCT: Struct = Struct("<2H")
 
+    # in the reader zbd, both values are fused into a list (PARENT_CHILD)
     parent: str
     child: str
 
@@ -230,10 +205,6 @@ class ObjectAddChild(ScriptObject):
         parent_node = anim_def.get_node(parent_index - 1, reader.prev + 0)
         child_node = anim_def.get_node(child_index - 1, reader.prev + 2)
         return cls(parent=parent_node, child=child_node)
-
-    def __repr__(self) -> str:
-        # in the zbd, both values are fused into a list (PARENT_CHILD)
-        return f"{self._NAME}(PARENT={self.parent!r}, CHILD={self.child!r})"
 
 
 class ObjectCycleTexture(ScriptObject):
@@ -254,9 +225,6 @@ class ObjectCycleTexture(ScriptObject):
         node = anim_def.get_node(node_index - 1, reader.prev + 4)
         assert_between("reset", 0, 5, reset, reader.prev + 6)
         return cls(node=node, reset=reset)
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.node!r}, RESET={self.reset})"
 
 
 class ConnectorFlag(IntFlag):
@@ -402,20 +370,6 @@ class ObjectConnector(ScriptObject):
             max_length=max_length,
         )
 
-    def __repr__(self) -> str:
-        return "\n".join(
-            [
-                f"{self._NAME}(",
-                f"  NAME={self.node!r},",
-                f"  FROM_NODE={self.from_node!r},",
-                f"  TO_NODE={self.to_node!r},",
-                f"  FROM_POS={self.from_pos},",
-                f"  TO_POS={self.to_pos},",
-                f"  MAX_LENGTH={self.max_length},",
-                ")",
-            ]
-        )
-
 
 class CallObjectConnector(ScriptObject):
     _NAME: str = "CALL_OBJECT_CONNECTOR"
@@ -471,6 +425,3 @@ class CallObjectConnector(ScriptObject):
             to_node=INPUT_NODE,
             to_pos=(to_x, to_y, to_z),
         )
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.node!r}, FROM_NODE_POS={self.from_node!r}, TO_POS={self.to_pos})"

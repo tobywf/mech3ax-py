@@ -58,6 +58,3 @@ class FrameBufferEffectColorFromTo(ScriptObject):
             delta=(delta_r, delta_g, delta_b, delta_a),
             run_time=run_time,
         )
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}(FROM={self.from_color}, TO={self.to_color}, RUN_TIME={self.run_time})"

@@ -11,13 +11,10 @@ from .utils import dir_exists, output_resolve, path_exists
 
 def anim_zbd_to_json(input_zbd: Path, output_json: Path) -> None:
     data = input_zbd.read_bytes()
-    anim, text = read_anim(data)
+    anim = read_anim(data)
 
     with output_json.open("w", encoding="utf-8") as f:
         f.write(anim.json(exclude_defaults=True, indent=2))
-
-    with output_json.with_suffix(".txt").open("w", encoding="utf-8") as f:
-        f.write(text)
 
 
 # def anim_json_to_zbd(input_json: Path, output_zbd: Path) -> None:

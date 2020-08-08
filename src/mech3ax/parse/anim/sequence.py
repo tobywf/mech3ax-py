@@ -26,9 +26,6 @@ class CallSequence(ScriptObject):
         assert_eq("sentinel", -1, sentinel, reader.prev + 32)
         return cls(name=name)
 
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.name!r})"
-
 
 class StopSequence(ScriptObject):
     _NAME: str = "STOP_SEQUENCE"
@@ -45,6 +42,3 @@ class StopSequence(ScriptObject):
 
         assert_eq("sentinel", -1, sentinel, reader.prev + 32)
         return cls(name=name)
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}(NAME={self.name!r})"

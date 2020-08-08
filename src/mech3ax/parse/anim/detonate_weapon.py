@@ -27,6 +27,3 @@ class DetonateWeapon(ScriptObject):
         node = anim_def.get_node(node_index - 1, reader.prev + 10)
         at_node = AtNodeShort(node=node, tx=tx, ty=ty, tz=tz)
         return cls(name=name, at_node=at_node)
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}(WEAPON={self.name!r}, AT_NODE={self.at_node!r})"
