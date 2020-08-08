@@ -45,10 +45,8 @@ def anim_from_zbd_subparser(subparsers: _SubParsersAction) -> None:
 
 
 def anim_to_zbd_subparser(_subparsers: _SubParsersAction) -> None:
+    # parser = subparsers.add_parser("anim", description=__doc__)
+    # parser.set_defaults(command=anim_to_zbd_command)
+    # parser.add_argument("input_json", type=path_exists)
+    # parser.add_argument("output_zbd", type=dir_exists, default=None, nargs="?")
     pass
-
-
-#     parser = subparsers.add_parser("anim", description=__doc__)
-#     parser.set_defaults(command=anim_to_zbd_command)
-#     parser.add_argument("input_json", type=path_exists)
-#     parser.add_argument("output_zbd", type=dir_exists, default=None, nargs="?")

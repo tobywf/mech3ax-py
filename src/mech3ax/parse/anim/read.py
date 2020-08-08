@@ -108,6 +108,7 @@ def _read_anim_info(reader: BinReader) -> Tuple[int, int, int]:
     assert_eq("field 52", 0, zero52, reader.prev + 52)
     assert_eq("field 56", 0, zero56, reader.prev + 56)
     assert_eq("field 60", 1, one60, reader.prev + 60)
+    # this is probably a float
     assert_eq("field 64", 0, zero64, reader.prev + 64)
 
     LOG.debug("Anim count is %d", count)

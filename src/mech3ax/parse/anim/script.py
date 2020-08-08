@@ -7,21 +7,9 @@ from typing import List
 
 from mech3ax.errors import assert_eq, assert_in
 
-# these imports are needed, because otherwise the classes wouldn't get picked up
 from ..utils import BinReader
-from .animation import DUMMY_IMPORT as _ANIMATION_DI  # pylint: disable=unused-import
-from .control_flow import DUMMY_IMPORT as _CONTROL_FLOW_DI
-from .detonate_weapon import DUMMY_IMPORT as _DETONATE_WEAPON_DI
-from .fog import DUMMY_IMPORT as _FOG_DI
-from .frame_buffer_effects import DUMMY_IMPORT as _FBX_DI
-from .light import DUMMY_IMPORT as _LIGHT_DI
-from .models import OBJECT_REGISTRY_NUM, AnimDef, ScriptItem, StartOffset
-from .object_motion import DUMMY_IMPORT as _OBJECT_MOTION_DI
-from .object_motion_si_script import DUMMY_IMPORT as _OBJECT_MOTION_SI_DI
-from .object_state import DUMMY_IMPORT as _OBJECT_STATE_DI
-from .puffer import DUMMY_IMPORT as _PUFFER_DI
-from .sequence import DUMMY_IMPORT as _SEQUENCE_DI
-from .sound import DUMMY_IMPORT as _SOUND_DI
+from .models import AnimDef, ScriptItem, StartOffset
+from .script_imports import OBJECT_REGISTRY_NUM
 
 LOG = logging.getLogger(__name__)
 

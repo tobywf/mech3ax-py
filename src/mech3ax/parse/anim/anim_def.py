@@ -1,9 +1,10 @@
 import logging
 from io import StringIO
 from struct import Struct
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from mech3ax.errors import (
+    assert_all_zero,
     assert_ascii,
     assert_eq,
     assert_ge,
@@ -58,15 +59,10 @@ OBJECT = Struct("<32s I 60s")
 assert OBJECT.size == 96, OBJECT.size
 
 
-def assert_all_zero(data: Union[bytes, bytearray], offset: int) -> None:
-    for i, byte in enumerate(data):
-        assert_eq(f"byte {i:03}", 0, byte, offset + i)
-
-
 def _read_nodes(reader: BinReader, count: int, f: StringIO) -> List[NamePtrFlag]:
     # the first entry is always zero
     name_raw, zero, ptr = reader.read(NODE)
-    assert_all_zero(name_raw, reader.prev + 0)
+    assert_all_zero("name", name_raw, reader.prev + 0)
     assert_eq("field 32", 0, zero, reader.prev + 32)
     assert_eq("field 36", 0, ptr, reader.prev + 36)
 
@@ -86,7 +82,7 @@ def _read_nodes(reader: BinReader, count: int, f: StringIO) -> List[NamePtrFlag]
 def _read_lights(reader: BinReader, count: int, f: StringIO) -> List[NamePtrFlag]:
     # the first entry is always zero
     name_raw, flag, ptr, zero = reader.read(READER_LOOKUP)
-    assert_all_zero(name_raw, reader.prev + 0)
+    assert_all_zero("name", name_raw, reader.prev + 0)
     assert_eq("field 32", 0, flag, reader.prev + 32)
     assert_eq("field 36", 0, ptr, reader.prev + 36)
     assert_eq("field 40", 0, zero, reader.prev + 40)
@@ -98,6 +94,8 @@ def _read_lights(reader: BinReader, count: int, f: StringIO) -> List[NamePtrFlag
             name = ascii_zterm_node_name(name_raw)
         assert_eq("field 32", 0, flag, reader.prev + 32)
         assert_ne("field 36", 0, ptr, reader.prev + 36)
+        # if this were non-zero, it would cause the light to be removed instead
+        # of added (???)
         assert_eq("field 40", 0, zero, reader.prev + 40)
         print("LIGHT", name, file=f, sep="\t")
         lights.append(NamePtrFlag(name=name, ptr=ptr))
@@ -108,7 +106,7 @@ def _read_lights(reader: BinReader, count: int, f: StringIO) -> List[NamePtrFlag
 def _read_puffers(reader: BinReader, count: int, f: StringIO) -> List[NamePtrFlag]:
     # the first entry is always zero
     name_raw, flag, ptr, zero = reader.read(READER_LOOKUP)
-    assert_all_zero(name_raw, reader.prev + 0)
+    assert_all_zero("name", name_raw, reader.prev + 0)
     assert_eq("field 32", 0, flag, reader.prev + 32)
     assert_eq("field 36", 0, ptr, reader.prev + 36)
     assert_eq("field 40", 0, zero, reader.prev + 40)
@@ -119,6 +117,9 @@ def _read_puffers(reader: BinReader, count: int, f: StringIO) -> List[NamePtrFla
         with assert_ascii("name", name_raw, reader.prev + 0):
             name = ascii_zterm_padded(name_raw)
         assert_eq("field 32", 0, (flag & 0x00FFFFFF), reader.prev + 32)
+        # TODO: what does this flag mean?
+        # this is something the code does, but i'm not sure why
+        # some of these values make decent floating point numbers
         flag = flag >> 24
         assert_ne("field 36", 0, ptr, reader.prev + 36)
         assert_eq("field 40", 0, zero, reader.prev + 40)
@@ -133,7 +134,7 @@ def _read_dynamic_sounds(
 ) -> List[NamePtrFlag]:
     # the first entry is always zero
     name_raw, flag, ptr, zero = reader.read(READER_LOOKUP)
-    assert_all_zero(name_raw, reader.prev + 0)
+    assert_all_zero("name", name_raw, reader.prev + 0)
     assert_eq("field 32", 0, flag, reader.prev + 32)
     assert_eq("field 36", 0, ptr, reader.prev + 36)
     assert_eq("field 40", 0, zero, reader.prev + 40)
@@ -155,7 +156,7 @@ def _read_dynamic_sounds(
 def _read_static_sounds(reader: BinReader, count: int, f: StringIO) -> List[NameRaw]:
     # the first entry is always zero
     name_raw, ptr = reader.read(STATIC_SOUND)
-    assert_all_zero(name_raw, reader.prev + 0)
+    assert_all_zero("name", name_raw, reader.prev + 0)
     assert_eq("field 32", 0, ptr, reader.prev + 32)
 
     sounds = []
@@ -181,7 +182,7 @@ def _read_sequence_definitions(
 
         assert_in("activation", (0x0, 0x303), flag, reader.prev + 32)
         activation: SeqActivation = "ON_CALL" if flag == 0x303 else "NONE"
-        assert_all_zero(zero, reader.prev + 36)
+        assert_all_zero("field 36", zero, reader.prev + 36)
         assert_gt("seqdef length", 0, seqdef_len, reader.prev + 56)
         assert_ne("seqdef ptr", 0, seqdef_ptr, reader.prev + 60)
 
@@ -192,7 +193,7 @@ def _read_sequence_definitions(
     return sequences
 
 
-def _read_reset_state(
+def _read_reset_state(  # pylint: disable=too-many-arguments
     reader: BinReader,
     anim_def: AnimDef,
     length: int,
@@ -204,22 +205,25 @@ def _read_reset_state(
     with assert_ascii("reset end", reset_raw, reader.prev + 0):
         reset_end = ascii_zterm_padded(reset_raw)
 
+    # this is always "RESET_SEQUENCE"
     assert_eq("reset end", "RESET_SEQUENCE", reset_end, reader.prev + 0)
     assert_eq("reset ptr", ptr, reset_ptr, reader.prev + 56)
-    assert_eq("reset length", length, reset_len, reader.prev + 60)
+    assert_eq("reset len", length, reset_len, reader.prev + 60)
 
-    if length:
-        assert_ne("reset ptr", 0, ptr, offset)
-        print("RESET_STATE", file=f)
-        script = _parse_script(reader, anim_def, length, f)
-        return SeqDef(ptr=ptr, script=script)
+    if not length:
+        assert_eq("reset ptr", 0, ptr, offset)
+        return None
 
-    assert_eq("reset ptr", 0, ptr, offset)
-    return None
+    assert_ne("reset ptr", 0, ptr, offset)
+    print("RESET_STATE", file=f)
+    script = _parse_script(reader, anim_def, length, f)
+    return SeqDef(ptr=ptr, script=script)
 
 
 def _read_anim_refs(reader: BinReader, count: int, f: StringIO) -> List[NameRaw]:
-    # the first entry... is not zero!
+    # the first entry... is not zero! as this is not a node list
+    # there's one anim ref per CALL_ANIMATION, and there may be duplicates to
+    # the same anim since multiple calls might need to be ordered
     anim_refs = []
     for _ in range(count):
         name_raw, zero64, zero68 = reader.read(ANIM_REF)
@@ -240,7 +244,7 @@ def _read_anim_refs(reader: BinReader, count: int, f: StringIO) -> List[NameRaw]
 def _read_objects(reader: BinReader, count: int, f: StringIO) -> List[NameRaw]:
     # the first entry is always zero
     data = reader.read_bytes(OBJECT.size)
-    assert_all_zero(data, reader.prev)
+    assert_all_zero("object", data, reader.prev)
 
     objects = []
     for _ in range(1, count):
@@ -250,7 +254,6 @@ def _read_objects(reader: BinReader, count: int, f: StringIO) -> List[NameRaw]:
             name = ascii_zterm_node_name(name_raw)
 
         assert_eq("field 32", 0, zero32, reader.prev + 32)
-        # assert_ne("field 36", 0, ptr, reader.prev + 36)
 
         print("OBJECT", name, file=f, sep="\t")
 
@@ -338,7 +341,7 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
     else:
         assert_eq("anim root ptr", base_node_ptr, anim_root_ptr, data_offset + 100)
 
-    assert_all_zero(zero104, data_offset + 104)
+    assert_all_zero("field 104", zero104, data_offset + 104)
 
     assert_eq("field 152", 0, zero152, data_offset + 152)
     assert_in("field 153", (0, 1, 2, 3, 4), activation_value, data_offset + 153)
@@ -359,7 +362,7 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
     assert_eq("field 208", 0x4E455551, int208, data_offset + 208)
     assert_eq("field 212", 0x00004543, int212, data_offset + 212)
 
-    assert_all_zero(zero216, data_offset + 216)
+    assert_all_zero("field 216", zero216, data_offset + 216)
 
     assert_eq("field 275", 0, zero275, data_offset + 275)
     assert_eq("field 312", 0, zero312, data_offset + 312)
@@ -535,8 +538,8 @@ def read_anim_def_zero(reader: BinReader) -> None:
     # the first entry is always zero
     data = bytearray(reader.read_bytes(ANIM_DEF.size))
     # except for this one byte?
-    assert_eq("byte 153", 3, data[153], reader.prev + 153)
+    assert_eq("anim def header byte 153", 3, data[153], reader.prev + 153)
     data[153] = 0
-    assert_all_zero(data, reader.prev)
+    assert_all_zero("anim def header", data, reader.prev)
     bdata = reader.read_bytes(RESET_STATE.size)
-    assert_all_zero(bdata, reader.prev)
+    assert_all_zero("anim def reset", bdata, reader.prev)

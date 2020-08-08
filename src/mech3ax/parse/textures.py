@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import IntFlag
 from struct import Struct, unpack_from
 from typing import BinaryIO, Iterable, Optional, Sequence, Tuple, cast
 
@@ -10,9 +9,9 @@ from PIL import Image
 
 from ..errors import (
     Mech3InternalError,
-    Mech3ParseError,
     Mech3TextureError,
     assert_eq,
+    assert_flag,
     assert_in,
 )
 from .colors import (
@@ -22,6 +21,7 @@ from .colors import (
     rgb_to_palette,
     simple_alpha565,
 )
+from .int_flag import IntFlag
 from .utils import BinReader, ascii_zterm_padded
 
 TEX_HEADER = Struct("<6I")
@@ -46,21 +46,6 @@ class TextureFlag(IntFlag):
     ImageLoaded = 1 << 5
     AlphaLoaded = 1 << 6
     PaletteLoaded = 1 << 7
-
-    def __call__(self, value: int) -> bool:
-        return value & self == self
-
-    @classmethod
-    def check(cls, value: int) -> TextureFlag:
-        if value == 0:
-            raise ValueError(f"Undefined flag: {value}")
-        mask = 0
-        for flag in cls.__members__.values():
-            if flag(value):
-                mask |= flag.value
-        if value != mask:
-            raise ValueError(f"Undefined flag: {value}")
-        return cls(value)
 
 
 @dataclass
@@ -97,15 +82,13 @@ def stretch_img(img: Image, stretch: int) -> Image:
 
 
 def _validate_texture_info(
-    offset: int, flag: int, zero: int, stretch: int
+    offset: int, flag_raw: int, zero: int, stretch: int
 ) -> TextureFlag:
     assert_eq("field 8", 0, zero, offset)
     assert_in("stretch", (0, 1, 2, 3), stretch, offset)
 
-    try:
-        flag = TextureFlag.check(flag)
-    except ValueError as e:
-        raise Mech3ParseError(f"flag: {flag:02X} is invalid (at {offset})") from e
+    with assert_flag("flag", flag_raw, offset):
+        flag = TextureFlag.check(flag_raw)
 
     # one byte per pixel support isn't implemented
     assert_eq(

@@ -19,16 +19,16 @@ class FogState(ScriptObject):
     _NUMBER: int = 28
     _STRUCT: Struct = Struct("<32s 2I 7f")
 
+    fog_type: Literal["LINEAR"]
     color: Tuple[float, float, float]
     altitude: Tuple[float, float]
     range: Tuple[float, float]
-    fog_type: Literal["LINEAR"]
 
     @classmethod
     def read(cls, reader: BinReader, _anim_def: AnimDef) -> FogState:
         (
             name_raw,
-            unknown,
+            flag_raw,
             fog_type,
             color_r,
             color_g,
@@ -39,8 +39,13 @@ class FogState(ScriptObject):
             range_max,
         ) = reader.read(cls._STRUCT)
         assert_eq("name", DEFAULT_FOG_NAME, name_raw, reader.prev + 0)
-        assert_eq("field 32", 14, unknown, reader.prev + 32)
-        # LINEAR = 1
+        # see LIGHT_STATE - in this case, all FOG_STATEs use the same flags
+        # 1 << 0 set fog state
+        # 1 << 1 set fog color
+        # 1 << 2 set fog altitude
+        # 1 << 3 set fog range
+        assert_eq("flag", 14, flag_raw, reader.prev + 32)
+        # OFF = 0, LINEAR = 1, EXPONENTIAL = 2
         assert_eq("fog type", 1, fog_type, reader.prev + 36)
 
         assert_between("red", 0.0, 1.0, color_r, reader.prev + 40)
@@ -54,10 +59,10 @@ class FogState(ScriptObject):
         assert_ge("range max", range_min, range_max, reader.prev + 64)
 
         return cls(
+            fog_type="LINEAR",
             color=(color_r, color_g, color_b),
             altitude=(altitude_min, altitude_max),
             range=(range_min, range_max),
-            fog_type="LINEAR",
         )
 
     def __repr__(self) -> str:

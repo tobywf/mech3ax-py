@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from struct import Struct
-from typing import Optional
 
 from mech3ax.errors import assert_ascii
 
@@ -17,17 +16,16 @@ class DetonateWeapon(ScriptObject):
     _STRUCT: Struct = Struct("<10s h 3f")
 
     name: str
-    at_node: Optional[AtNodeShort] = None
+    at_node: AtNodeShort
 
     @classmethod
     def read(cls, reader: BinReader, anim_def: AnimDef) -> DetonateWeapon:
-        name_raw, at_index, at_tx, at_ty, at_tz = reader.read(cls._STRUCT)
+        name_raw, node_index, tx, ty, tz = reader.read(cls._STRUCT)
         with assert_ascii("name", name_raw, reader.prev + 0):
             name = ascii_zterm_padded(name_raw)
 
-        at_node = AtNodeShort.from_index(
-            anim_def, at_index, at_tx, at_ty, at_tz, reader.prev + 10
-        )
+        node = anim_def.get_node(node_index - 1, reader.prev + 10)
+        at_node = AtNodeShort(node=node, tx=tx, ty=ty, tz=tz)
         return cls(name=name, at_node=at_node)
 
     def __repr__(self) -> str:

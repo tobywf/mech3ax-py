@@ -41,9 +41,6 @@ class If(Comparison):
         lhs, discriminator, rhs = get_comparison(condition, value, reader.prev + 0)
         return cls(lhs=lhs, discriminator=discriminator, rhs=rhs)
 
-    def __repr__(self) -> str:
-        return f"{self._NAME}({super().__repr__()})"
-
 
 class Elif(Comparison):
     _NAME: str = "ELSEIF"
@@ -56,9 +53,6 @@ class Elif(Comparison):
         assert_eq("field 4", 0, zero, reader.prev + 4)
         lhs, discriminator, rhs = get_comparison(condition, value, reader.prev + 0)
         return cls(lhs=lhs, discriminator=discriminator, rhs=rhs)
-
-    def __repr__(self) -> str:
-        return f"{self._NAME}({super().__repr__()})"
 
 
 class Else(ScriptObject):

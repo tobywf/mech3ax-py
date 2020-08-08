@@ -86,7 +86,7 @@ class Comparison(ScriptObject):
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        return f"{self.lhs!r} <= {self.rhs.value!r}"
+        return f"{self._NAME}({self.lhs!r} <= {self.rhs.value!r})"
 
 
 IF_COND: Mapping[

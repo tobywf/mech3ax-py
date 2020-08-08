@@ -145,6 +145,8 @@ ANIM_ACTIVATION: List[AnimActivation] = [
     "ON_STARTUP",
 ]
 
+INPUT_NODE = "INPUT_NODE"
+
 
 class AnimDef(BaseModel):
     name: str
@@ -179,11 +181,6 @@ class AnimDef(BaseModel):
     reset_state_ptr: int = 0
     seq_defs_ptr: int = 0
 
-    def get_node_or_input(self, index: int, offset: int) -> str:
-        if index < 0:
-            return "INPUT_NODE"
-        return self.get_node(index, offset)
-
     def get_node(self, index: int, offset: int) -> str:
         max_index = len(self.nodes) - 1
         assert_between("node index", 0, max_index, index, offset)
@@ -212,19 +209,7 @@ class AtNodeShort(BaseModel):
     tz: float = 0.0
 
     def __repr__(self) -> str:
-        if self.tx == 0.0 and self.ty == 0.0 and self.tz == 0.0:
-            return f"({self.node!r})"
         return f"({self.node!r}, {self.tx}, {self.ty}, {self.tz})"
-
-    @classmethod
-    def from_index(  # pylint: disable=too-many-arguments
-        cls, anim_def: AnimDef, index: int, tx: float, ty: float, tz: float, offset: int
-    ) -> Optional[AtNodeShort]:
-        if index == 0:
-            return None
-
-        node = anim_def.get_node(index - 1, offset)
-        return cls(node=node, tx=tx, ty=ty, tz=tz)
 
 
 class AtNodeLong(BaseModel):
@@ -237,31 +222,18 @@ class AtNodeLong(BaseModel):
     rz: float = 0.0
 
     def __repr__(self) -> str:
-        if self.rx == 0.0 and self.ry == 0.0 and self.rz == 0.0:
-            if self.tx == 0.0 and self.ty == 0.0 and self.tz == 0.0:
-                return f"({self.node!r})"
-            return f"({self.node!r}, {self.tx}, {self.ty}, {self.tz})"
         return f"({self.node!r}, {self.tx}, {self.ty}, {self.tz}, {self.rx}, {self.ry}, {self.rz})"
 
-    @classmethod
-    def from_index(  # pylint: disable=too-many-arguments
-        cls,
-        anim_def: AnimDef,
-        index: int,
-        tx: float,
-        ty: float,
-        tz: float,
-        rx: float,
-        ry: float,
-        rz: float,
-        offset: int,
-    ) -> Optional[AtNodeLong]:
-        if index == 0:
-            return None
 
-        if index > 100:  # TODO: use max node count
-            node = "INPUT_NODE"
-        else:
-            node = anim_def.get_node_or_input(index - 1, offset)
+AtNodeFlex = Union[None, AtNodeShort, AtNodeLong]
+Vector = Tuple[float, float, float]
+Quaternion = Tuple[float, float, float, float]
 
-        return cls(node=node, tx=tx, ty=ty, tz=tz, rx=rx, ry=ry, rz=rz)
+
+class MotionFrame(BaseModel):
+    start: float
+    end: float
+
+    translate: Optional[Vector] = None
+    rotate: Optional[Quaternion] = None
+    scale: Optional[Vector] = None

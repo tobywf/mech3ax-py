@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import logging
-from enum import IntFlag
 from struct import Struct
 from typing import List, Optional, Tuple
 
 from pydantic import BaseModel
 
-from ..errors import Mech3ParseError, assert_eq, assert_in, assert_lt, assert_ne
+from ..errors import assert_eq, assert_flag, assert_in, assert_lt, assert_ne
+from .int_flag import IntFlag
 from .utils import BinReader
 
 SIGNATURE = 0x02971222
@@ -37,21 +37,6 @@ class MaterialFlag(IntFlag):
     Cycled = 4
     Something = 16
     Free = 32  # ?
-
-    def __call__(self, value: int) -> bool:
-        return value & self == self
-
-    @classmethod
-    def check(cls, value: int) -> MaterialFlag:
-        if value == 0:
-            raise ValueError(f"Undefined flag: {value}")
-        mask = 0
-        for flag in cls.__members__.values():
-            if (value & flag.value) == flag.value:
-                mask |= flag.value
-        if value != mask:
-            raise ValueError(f"Undefined flag: {value}")
-        return cls(value)
 
 
 class Material(BaseModel):
@@ -132,7 +117,7 @@ def _read_materials_set(  # pylint: disable=too-many-locals
         # very similar to materials in the mechlib
         (
             unk1,
-            flag,
+            flag_raw,
             rgb,
             red,
             green,
@@ -147,10 +132,9 @@ def _read_materials_set(  # pylint: disable=too-many-locals
             index2,
         ) = reader.read(MATERIAL_INFO)
 
-        try:
-            flag = MaterialFlag.check(flag)
-        except ValueError:
-            raise Mech3ParseError(f"flag: {flag:02X} is invalid (at {reader.prev + 1})")
+        with assert_flag("flag", flag_raw, reader.prev + 1):
+            flag = MaterialFlag.check(flag_raw)
+
         assert_eq("free", False, MaterialFlag.Free(flag), reader.prev + 1)
 
         if MaterialFlag.Textured(flag):

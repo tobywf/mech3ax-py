@@ -159,3 +159,21 @@ def assert_ascii(
         yield
     except UnicodeDecodeError:
         raise error_class(f"{name}: {actual!r} is not ASCII (at {location})")
+
+
+@contextmanager
+def assert_flag(
+    name: str,
+    actual: int,
+    location: Union[int, str],
+    error_class: Type[Mech3Error] = Mech3ParseError,
+) -> Iterator[None]:
+    try:
+        yield
+    except ValueError:
+        raise error_class(f"{name}: 0x{actual:08X} is not valid (at {location})")
+
+
+def assert_all_zero(name: str, data: Union[bytes, bytearray], location: int) -> None:
+    for i, byte in enumerate(data):
+        assert_eq(f"{name} byte {i:03}", 0, byte, location + i)
