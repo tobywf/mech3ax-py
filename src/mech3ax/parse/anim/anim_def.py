@@ -1,12 +1,13 @@
 import logging
 from io import StringIO
 from struct import Struct
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from mech3ax.errors import (
     assert_all_zero,
     assert_ascii,
     assert_eq,
+    assert_flag,
     assert_ge,
     assert_gt,
     assert_in,
@@ -14,6 +15,7 @@ from mech3ax.errors import (
 )
 from mech3ax.serde import Base64
 
+from ..int_flag import IntFlag
 from ..utils import (
     BinReader,
     ascii_zterm_node_name,
@@ -265,6 +267,19 @@ def _read_objects(reader: BinReader, count: int, f: StringIO) -> List[NameRaw]:
     return objects
 
 
+class AnimDefFlag(IntFlag):
+    ExecutionByRange = 1 << 1
+    ExecutionByZone = 1 << 3
+    HasCallback = 1 << 4
+    ResetUnk = 1 << 5
+    NetworkLogSet = 1 << 10
+    NetworkLogOn = 1 << 11
+    SaveLogSet = 1 << 12
+    SaveLogOn = 1 << 13
+    AutoResetNodeStates = 1 << 16
+    ProximityDamage = 1 << 20
+
+
 def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     reader: BinReader, f: StringIO
 ) -> AnimDef:
@@ -275,13 +290,13 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
         anim_root_raw,
         anim_root_ptr,
         zero104,  # 44 zero bytes
-        node_flag,  # 148
+        flag_raw,  # 148
         zero152,
         activation_value,
         action_prio,
         byte155,
-        execution_by_range_min,
-        execution_by_range_max,
+        exec_by_range_min,
+        exec_by_range_max,
         reset_time,
         zero168,
         max_health,
@@ -343,10 +358,38 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
 
     assert_all_zero("field 104", zero104, data_offset + 104)
 
+    with assert_flag("flag", flag_raw, data_offset + 148):
+        flag = AnimDefFlag.check(flag_raw)
+
+    network_log: Optional[bool] = None
+    if AnimDefFlag.NetworkLogSet(flag):
+        network_log = AnimDefFlag.NetworkLogOn(flag)
+
+    save_log: Optional[bool] = None
+    if AnimDefFlag.SaveLogSet(flag):
+        save_log = AnimDefFlag.SaveLogOn(flag)
+
     assert_eq("field 152", 0, zero152, data_offset + 152)
     assert_in("field 153", (0, 1, 2, 3, 4), activation_value, data_offset + 153)
     assert_eq("field 154", 4, action_prio, data_offset + 154)
     assert_eq("field 155", 2, byte155, data_offset + 155)
+
+    exec_by_zone = AnimDefFlag.ExecutionByZone(flag)
+    if not AnimDefFlag.ExecutionByRange(flag):
+        assert_eq("exec by range min", 0.0, exec_by_range_min, data_offset + 156)
+        assert_eq("exec by range max", 0.0, exec_by_range_max, data_offset + 156)
+        exec_by_range = None
+    else:
+        assert_eq("exec by zone", False, exec_by_zone, data_offset + 148)
+        assert_ge("exec by range min", 0.0, exec_by_range_min, data_offset + 156)
+        assert_ge(
+            "exec by range max", exec_by_range_max, exec_by_range_max, data_offset + 156
+        )
+        exec_by_range = (exec_by_range_min, exec_by_range_max)
+
+    if not AnimDefFlag.ResetUnk(flag):
+        assert_eq("reset time", -1.0, reset_time, data_offset + 164)
+        reset_time = None
 
     assert_eq("field 168", 0.0, zero168, data_offset + 168)
     assert_ge("health", 0.0, max_health, data_offset + 172)
@@ -372,17 +415,9 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
     print("ANIMATION_NAME", repr(anim_name), file=f)
     print("ANIMATION_ROOT_NAME", repr(anim_root), file=f)
 
-    node_flag_mask = node_flag & 0xFFEEC3C5
-    assert_eq("node flag mask", 0, node_flag_mask, data_offset + 148)
-
-    def flag_to_map(flag: int) -> Dict[str, int]:
-        return {
-            f"bit {bit}": ((flag >> bit) & 1)
-            for bit in (1, 3, 4, 5, 10, 11, 12, 13, 16, 20)
-            if ((flag >> bit) & 1)
-        }
-
     activation = ANIM_ACTIVATION[activation_value]
+
+    print("FLAG", repr(flag), file=f)
 
     print(
         "ACT",
@@ -392,28 +427,11 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
         "HLT",
         max_health,
         "EXE",
-        execution_by_range_min,
-        execution_by_range_max,
-        file=f,
-    )
-
-    flag_map = flag_to_map(node_flag)
-    print("FLAG", flag_map, file=f)
-    # if 'bit 3' in flag_map or 'bit 4' in flag_map:
-    #     print("INTEREST", file=f)
-
-    print(
-        "COUNT",
-        seq_def_count,
-        reset_state_length,
-        object_count,
-        node_count,
-        light_count,
-        puffer_count,
-        dynamic_sound_count,
-        static_sound_count,
-        activ_prereq_count,
-        anim_ref_count,
+        exec_by_range,
+        "NLOG",
+        network_log,
+        "SLOG",
+        save_log,
         file=f,
     )
 
@@ -492,10 +510,19 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
         name=name,
         anim_name=anim_name,
         anim_root=anim_root,
+        # ---
+        auto_reset_node_states=AnimDefFlag.AutoResetNodeStates(flag),
+        activation=activation,
+        execution_by_range=exec_by_range,
+        execution_by_zone=exec_by_zone,
+        network_log=network_log,
+        save_log=save_log,
+        has_callback=AnimDefFlag.HasCallback(flag),
+        callback_count=0,
         reset_time=reset_time,
         health=max_health,
-        activation=activation,
-        execution_by_range=(execution_by_range_min, execution_by_range_max),
+        proximity_damage=AnimDefFlag.ProximityDamage(flag),
+        # ---
         objects=objects,
         nodes=nodes,
         lights=lights,
@@ -504,6 +531,8 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
         static_sounds=static_sounds,
         activation_prereq=activ_prereq,
         anim_refs=anim_refs,
+        # skip reset_sequence and sequences, as they need to look up other items
+        # ---
         objects_ptr=objects_ptr,
         nodes_ptr=nodes_ptr,
         lights_ptr=lights_ptr,
@@ -530,6 +559,15 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
         )
     else:
         assert_eq("seq ptr", 0, seq_defs_ptr, data_offset + 196)
+
+    # the Callback script object checks if callbacks are allowed, but i also
+    # want to catch the case where the flag might've been set, but no callbacks
+    # were in the scripts
+    if anim_def.has_callback:
+        assert_gt("callbacks", 0, anim_def.callback_count, data_offset + 148)
+
+    # don't need this value any more
+    anim_def.callback_count = 0
 
     return anim_def
 

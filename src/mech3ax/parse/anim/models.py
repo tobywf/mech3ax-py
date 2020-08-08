@@ -153,11 +153,17 @@ class AnimDef(BaseModel):
     anim_name: str
     anim_root: str
 
-    reset_time: float = 0.0
-    health: float = 0.0
-
+    auto_reset_node_states: bool = True
     activation: AnimActivation
-    execution_by_range: Tuple[float, float] = (0.0, 0.0)
+    execution_by_range: Optional[Tuple[float, float]] = None
+    execution_by_zone: bool = False
+    network_log: Optional[bool] = None
+    save_log: Optional[bool] = None
+    has_callback: bool = False
+    callback_count: int = 0
+    reset_time: Optional[float] = None
+    health: float = 0.0
+    proximity_damage: bool = True
 
     objects: List[NameRaw] = []
     nodes: List[NamePtrFlag] = []

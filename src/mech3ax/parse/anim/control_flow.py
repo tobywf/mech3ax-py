@@ -89,7 +89,9 @@ class Callback(ScriptObject):
     value: int
 
     @classmethod
-    def read(cls, reader: BinReader, _anim_def: AnimDef) -> Callback:
+    def read(cls, reader: BinReader, anim_def: AnimDef) -> Callback:
+        assert_eq("has callback", True, anim_def.has_callback, reader.offset)
+        anim_def.callback_count += 1
         (value,) = reader.read(cls._STRUCT)
         return cls(value=value)
 
