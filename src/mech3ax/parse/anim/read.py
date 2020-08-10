@@ -9,7 +9,7 @@ from mech3ax.serde import Base64
 
 from ..utils import BinReader, ascii_zterm_partition
 from .anim_def import read_anim_def, read_anim_def_zero
-from .models import AnimDef
+from .models import AnimDef, AnimDefPointers
 
 SIGNATURE = 0x08170616
 VERSION = 39
@@ -37,10 +37,10 @@ class AnimMetadata(BaseModel):
     class Config:
         json_encoders = {bytes: Base64.to_str}
 
-    anim_defs: List[AnimDef]
     anim_ptr: int
     world_ptr: int
     anim_names: List[AnimName]
+    anim_def_ptrs: List[AnimDefPointers]
 
 
 def _read_anim_header(reader: BinReader) -> List[AnimName]:
@@ -115,32 +115,40 @@ def _read_anim_info(reader: BinReader) -> Tuple[int, int, int]:
     return (count, anim_ptr, world_ptr)
 
 
-def _read_anim_defs(reader: BinReader, count: int) -> List[AnimDef]:
+def _read_anim_defs(
+    reader: BinReader, count: int
+) -> Tuple[List[AnimDef], List[AnimDefPointers]]:
     LOG.debug("Reading animation definition 0 at %d", reader.offset)
     # the first entry is always zero
     read_anim_def_zero(reader)
     anim_defs = []
+    anim_def_ptrs = []
     for i in range(1, count):
         LOG.debug("Reading animation definition %d at %d", i, reader.offset)
-        anim_defs.append(read_anim_def(reader))
+        anim_def, anim_def_ptr = read_anim_def(reader)
+        anim_defs.append(anim_def)
+        anim_def_ptrs.append(anim_def_ptr)
 
-    return anim_defs
+    LOG.debug("Read animation definitions")
+    return anim_defs, anim_def_ptrs
 
 
-def read_anim(data: bytes) -> AnimMetadata:
+def read_anim(data: bytes) -> Tuple[AnimMetadata, List[AnimDef]]:
     reader = BinReader(data)
     LOG.debug("Reading animation data...")
 
     anim_names = _read_anim_header(reader)
     anim_count, anim_ptr, world_ptr = _read_anim_info(reader)
-    anim_defs = _read_anim_defs(reader, anim_count)
+    anim_defs, anim_def_ptrs = _read_anim_defs(reader, anim_count)
 
     assert_eq("anim end", len(data), reader.offset, reader.offset)
     LOG.debug("Read animation data")
 
-    return AnimMetadata(
+    anim_md = AnimMetadata(
         anim_names=anim_names,
         anim_ptr=anim_ptr,
         world_ptr=world_ptr,
-        anim_defs=anim_defs,
+        anim_def_ptrs=anim_def_ptrs,
     )
+
+    return anim_md, anim_defs

@@ -150,9 +150,13 @@ INPUT_NODE = "INPUT_NODE"
 
 
 class AnimDef(BaseModel):
+    class Config:
+        json_encoders = {bytes: Base64.to_str}
+
     name: str
     anim_name: str
     anim_root: str
+    file_name: str
 
     auto_reset_node_states: bool = True
     activation: AnimActivation
@@ -177,17 +181,6 @@ class AnimDef(BaseModel):
     reset_sequence: Optional[SeqDef] = None
     sequences: List[SeqDef] = []
 
-    objects_ptr: int = 0
-    nodes_ptr: int = 0
-    lights_ptr: int = 0
-    puffers_ptr: int = 0
-    dynamic_sounds_ptr: int = 0
-    static_sounds_ptr: int = 0
-    activ_prereqs_ptr: int = 0
-    anim_refs_ptr: int = 0
-    reset_state_ptr: int = 0
-    seq_defs_ptr: int = 0
-
     def get_node(self, index: int, offset: int) -> str:
         max_index = len(self.nodes) - 1
         assert_between("node index", 0, max_index, index, offset)
@@ -207,6 +200,21 @@ class AnimDef(BaseModel):
         max_index = len(self.static_sounds) - 1
         assert_between("sound index", 0, max_index, index, offset)
         return self.static_sounds[index].name
+
+
+class AnimDefPointers(BaseModel):
+    file_name: str
+
+    objects_ptr: int = 0
+    nodes_ptr: int = 0
+    lights_ptr: int = 0
+    puffers_ptr: int = 0
+    dynamic_sounds_ptr: int = 0
+    static_sounds_ptr: int = 0
+    activ_prereqs_ptr: int = 0
+    anim_refs_ptr: int = 0
+    reset_state_ptr: int = 0
+    seq_defs_ptr: int = 0
 
 
 class AtNodeShort(BaseModel):

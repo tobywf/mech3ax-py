@@ -1,6 +1,6 @@
 import logging
 from struct import Struct
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from mech3ax.errors import (
     assert_all_zero,
@@ -25,6 +25,7 @@ from .activation_prereq import read_activation_prereq
 from .models import (
     ANIM_ACTIVATION,
     AnimDef,
+    AnimDefPointers,
     NamePtrFlag,
     NameRaw,
     SeqActivation,
@@ -265,7 +266,7 @@ class AnimDefFlag(IntFlag):
 
 def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     reader: BinReader,
-) -> AnimDef:
+) -> Tuple[AnimDef, AnimDefPointers]:
     (
         anim_name_raw,
         name_raw,
@@ -464,10 +465,17 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
         assert_eq("anim ref ptr", 0, anim_refs_ptr, data_offset + 308)
         anim_refs = []
 
+    base_name = name.replace(".flt", "")
+    if name == anim_root:
+        file_name = f"{base_name}-{anim_name}.json"
+    else:
+        file_name = f"{base_name}-{anim_name}-{anim_root}.json"
+
     anim_def = AnimDef(
         name=name,
         anim_name=anim_name,
         anim_root=anim_root,
+        file_name=file_name,
         # ---
         auto_reset_node_states=AnimDefFlag.AutoResetNodeStates(flag),
         activation=activation,
@@ -490,17 +498,6 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
         activation_prereq=activ_prereq,
         anim_refs=anim_refs,
         # skip reset_sequence and sequences, as they need to look up other items
-        # ---
-        objects_ptr=objects_ptr,
-        nodes_ptr=nodes_ptr,
-        lights_ptr=lights_ptr,
-        puffers_ptr=puffers_ptr,
-        dynamic_sounds_ptr=dynamic_sounds_ptr,
-        static_sounds_ptr=static_sounds_ptr,
-        activ_prereqs_ptr=activ_prereqs_ptr,
-        anim_refs_ptr=anim_refs_ptr,
-        reset_state_ptr=reset_state_ptr,
-        seq_defs_ptr=seq_defs_ptr,
     )
 
     # unconditional read
@@ -523,7 +520,21 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
     # don't need this value any more
     anim_def.callback_count = 0
 
-    return anim_def
+    pointers = AnimDefPointers(
+        file_name=file_name,
+        objects_ptr=objects_ptr,
+        nodes_ptr=nodes_ptr,
+        lights_ptr=lights_ptr,
+        puffers_ptr=puffers_ptr,
+        dynamic_sounds_ptr=dynamic_sounds_ptr,
+        static_sounds_ptr=static_sounds_ptr,
+        activ_prereqs_ptr=activ_prereqs_ptr,
+        anim_refs_ptr=anim_refs_ptr,
+        reset_state_ptr=reset_state_ptr,
+        seq_defs_ptr=seq_defs_ptr,
+    )
+
+    return anim_def, pointers
 
 
 def read_anim_def_zero(reader: BinReader) -> None:
