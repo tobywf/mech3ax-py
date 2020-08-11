@@ -21,7 +21,7 @@ from ..parse.mechlib import (
     read_version,
     write_materials,
 )
-from ..parse.models import Node, read_model, write_model
+from ..parse.model3d import Node, read_model, write_model
 from .archive import MANIFEST, ArchiveInfo, ArchiveManifest, Renamer
 from .utils import dir_exists, output_resolve, path_exists
 
