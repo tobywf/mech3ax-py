@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
-src=("src/mech3ax" "model2blend.py" "test.py")
+src=("src/mech3ax" "model2blend.py" "test.py" "build.py")
 
 if [[ -n "$1" ]]; then
   ISORT_CHECK="--check-only"
