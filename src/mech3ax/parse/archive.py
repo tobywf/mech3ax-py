@@ -6,8 +6,8 @@ use these, and they are uninitialized memory written out, so usually safe to
 discard. If they aren't required, ``b""`` may be supplied instead.
 
 Additionally, duplicate names may be present in a ZArchive. If code reading and
-writing archives wants to be binary accurate, then entries must be written in a
-duplicate-compatible manner.
+writing archives wants to be binary accurate, then entries must be written to
+support this.
 """
 import logging
 from dataclasses import dataclass

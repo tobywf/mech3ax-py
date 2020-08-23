@@ -5,18 +5,11 @@ from typing import BinaryIO, Dict, List, Tuple, cast
 from pydantic import BaseModel
 
 from ..errors import assert_eq, assert_gt
+from .models import VEC3, VEC4, Vec3, Vec4
 from .utils import UINT32, BinReader
 
 MOTION = Struct("<I f 2I 2f")
 assert MOTION.size == 24, MOTION.size
-
-VECTOR = Struct("<3f")
-assert VECTOR.size == 12, VECTOR.size
-Vector = Tuple[float, float, float]
-
-QUATERNION = Struct("<4f")
-assert QUATERNION.size == 16, QUATERNION.size
-Quaternion = Tuple[float, float, float, float]
 
 VERSION = 4
 
@@ -26,7 +19,7 @@ LOG = logging.getLogger(__name__)
 class Motion(BaseModel):
     frames: int
     loop_time: float
-    parts: Dict[str, List[Tuple[Vector, Quaternion]]]
+    parts: Dict[str, List[Tuple[Vec3, Vec4]]]
 
 
 def read_motion(data: bytes) -> Motion:
@@ -52,11 +45,9 @@ def read_motion(data: bytes) -> Motion:
         # 8 = translation, 4 = rotation, 2 = scaling (never in motion.zbd)
         assert_eq("flag", 12, flag, reader.prev)
 
-        translations = [cast(Vector, reader.read(VECTOR)) for _ in range(frame_count)]
+        translations = [cast(Vec3, reader.read(VEC3)) for _ in range(frame_count)]
         # scaling would be read here (never in motion.zbd)
-        rotations = [
-            cast(Quaternion, reader.read(QUATERNION)) for _ in range(frame_count)
-        ]
+        rotations = [cast(Vec4, reader.read(VEC4)) for _ in range(frame_count)]
 
         # interleave translation and rotation for easy frame access
         parts[part_name] = list(zip(translations, rotations))
@@ -80,8 +71,8 @@ def write_motion(f: BinaryIO, motion: Motion) -> None:
         f.write(UINT32.pack(12))
 
         for translation, _ in values:
-            f.write(VECTOR.pack(*translation))
+            f.write(VEC3.pack(*translation))
         for _, rotation in values:
-            f.write(QUATERNION.pack(*rotation))
+            f.write(VEC4.pack(*rotation))
 
     LOG.debug("Wrote motion data")

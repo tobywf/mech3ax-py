@@ -30,7 +30,9 @@ Vec3 = Tuple[float, float, float]
 class PufferFlag(IntFlag):
     Inactive = 0
     Translate = 1 << 0
+    # this might not be right?
     GrowthFactor = 1 << 1
+    # this might not be right?
     State = 1 << 2
     LocalVelocity = 1 << 3
     WorldVelocity = 1 << 4
@@ -47,6 +49,7 @@ class PufferFlag(IntFlag):
     StartAgeRange = 1 << 15
     WorldAcceleration = 1 << 16
     Friction = 1 << 17
+    # there are more possible values (that are never set in the file)
 
 
 class PufferState(ScriptObject):

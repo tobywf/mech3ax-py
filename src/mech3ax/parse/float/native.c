@@ -38,8 +38,31 @@ euler_to_matrix(PyObject *self, PyObject *args)
     return Py_BuildValue("fffffffff", m00, m01, m02, m10, m11, m12, m20, m21, m22);
 }
 
+/*
+PyDoc_STRVAR(approx_sqrt__doc__, "(Crude) approximation of a square root");
+
+static PyObject *
+approx_sqrt(PyObject *self, PyObject *args)
+{
+    union
+    {
+        float f;
+        int i;
+    } u;
+
+    if (!PyArg_ParseTuple(args, "f", &u.f)) {
+        return NULL;
+    }
+
+    u.i = (u.i >> 1) + 0x1fc00000;
+
+    return PyFloat_FromDouble((double)(u.f));
+}
+*/
+
 static PyMethodDef float_methods[] = {
     {"euler_to_matrix", (PyCFunction)euler_to_matrix, METH_VARARGS, euler_to_matrix__doc__},
+//    {"approx_sqrt", (PyCFunction)approx_sqrt, METH_VARARGS, approx_sqrt__doc__},
     {NULL, NULL, 0, NULL},
 };
 

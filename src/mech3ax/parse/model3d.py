@@ -3,62 +3,18 @@ from __future__ import annotations
 
 import logging
 from struct import Struct
-from typing import BinaryIO, List, Optional, Tuple, cast
+from typing import BinaryIO, List, Optional, cast
 
 from pydantic import BaseModel
 
 from ..errors import assert_eq, assert_gt, assert_in, assert_lt, assert_ne
+from .models import MESH, OBJECT3D, POLYGON, VEC2, VEC3, Mesh, Polygon, Vec2, Vec3
 from .utils import UINT32, BinReader, ascii_zterm_node_name, pack_node_name
-
-VEC_3D = Struct("<3f")
-assert VEC_3D.size == 12, VEC_3D.size
-Vec3 = Tuple[float, float, float]
-
-VEC_2D = Struct("<2f")
-assert VEC_2D.size == 8, VEC_2D.size
-Vec2 = Tuple[float, float]
 
 NODE = Struct("<36s 3I 4B 3I 3I 2i 4I 4I 6f 6f 6f 5I")
 assert NODE.size == 208, NODE.size
 
-OBJECT3D = Struct("<I f 4f 3f 3f 3f 3f 3f 3f 12I")
-assert OBJECT3D.size == 144, OBJECT3D.size
-
-MESH = Struct("<4I 5I 4I 5I 4I I")
-assert MESH.size == 92, MESH.size
-
-POLYGON = Struct("<9I")
-assert POLYGON.size == 36, POLYGON.size
-
-
 LOG = logging.getLogger(__name__)
-
-
-class Polygon(BaseModel):
-    vertex_indices: List[int]
-    vertex_colors: List[Vec3]
-    normal_indices: List[int]
-    uv_coords: List[Vec2]
-    texture_index: int
-    flag: bool
-    unk_bit: bool
-    vtx_bit: bool
-    vertex_ptr: int
-    normal_ptr: int
-    uv_ptr: int
-    color_ptr: int
-    unk_ptr: int
-
-
-class Mesh(BaseModel):
-    vertices: List[Vec3]
-    normals: List[Vec3]
-    polygons: List[Polygon]
-    polygon_ptr: int
-    vertex_ptr: int
-    normal_ptr: int
-    flag: bool
-    unknown: List[int]
 
 
 class Object3D(BaseModel):
@@ -102,7 +58,7 @@ def _read_polygons(reader: BinReader, polygon_count: int) -> List[Polygon]:
             uv_ptr,
             color_ptr,
             unk_ptr,
-            tex_index,
+            texture_index,
             texture_info,
         ) = reader.read(POLYGON)
 
@@ -128,8 +84,10 @@ def _read_polygons(reader: BinReader, polygon_count: int) -> List[Polygon]:
             normal_indices=[],
             uv_coords=[],
             vertex_colors=[],
-            texture_index=tex_index,
-            flag=unk04 == 1,
+            texture_index=texture_index,
+            texture_info=texture_info,
+            # flag=unk04 == 1,
+            unk04=unk04,
             unk_bit=unk_bit,
             vtx_bit=vtx_bit,
             vertex_ptr=vertex_ptr,
@@ -150,11 +108,11 @@ def _read_polygons(reader: BinReader, polygon_count: int) -> List[Polygon]:
 
         if has_uvs:
             for _ in range(verts_in_poly):
-                u, v = reader.read(VEC_2D)
+                u, v = cast(Vec2, reader.read(VEC2))
                 polygon.uv_coords.append((u, 1.0 - v))
 
         polygon.vertex_colors = [
-            cast(Vec3, reader.read(VEC_3D)) for _ in range(verts_in_poly)
+            cast(Vec3, reader.read(VEC3)) for _ in range(verts_in_poly)
         ]
         polygons.append(polygon)
 
@@ -165,28 +123,42 @@ def _read_polygons(reader: BinReader, polygon_count: int) -> List[Polygon]:
 def _read_mesh(reader: BinReader) -> Mesh:
     LOG.debug("Reading mesh at %d...", reader.offset)
 
-    # fmt: off
     (
-        file_ptr, zero04, unk08, use_count,
-        polygon_count, vertex_count, normal_count, morph_count, light_count,
-        zero36, zero40, zero44, zero48,
-        polygon_ptr, vertex_ptr, normal_ptr, light_ptr, morph_ptr,
-        *unknown,
+        file_ptr,  # 00
+        zero04,
+        unk08,
+        has_parents,  # 12
+        polygon_count,  # 16
+        vertex_count,  # 20
+        normal_count,  # 24
+        morph_count,  # 28
+        light_count,  # 32
+        zero36,
+        zero40,
+        zero44,
+        zero48,
+        polygon_ptr,  # 52
+        vertex_ptr,  # 56
+        normal_ptr,  # 60
+        light_ptr,  # 64
+        morph_ptr,  # 68
+        unk72,
+        unk76,
+        unk80,
+        unk84,
         zero88,
     ) = reader.read(MESH)
-    # fmt: on
 
     assert_eq("file ptr", 0, file_ptr, reader.prev + 0)
     assert_eq("field 04", 0, zero04, reader.prev + 4)
     assert_in("field 08", (2, 3), unk08, reader.prev + 8)
-    assert_eq("use count", 1, use_count, reader.prev + 12)
+    # TODO: in GameZ, this can be greater than 1
+    assert_eq("has parents", 1, has_parents, reader.prev + 12)
 
     assert_eq("field 36", 0, zero36, reader.prev + 36)
-    assert_eq("field 40", 0, zero40, reader.prev + 40)
-    assert_eq("field 44", 0, zero44, reader.prev + 44)
+    assert_eq("field 40", 0.0, zero40, reader.prev + 40)
+    assert_eq("field 44", 0.0, zero44, reader.prev + 44)
     assert_eq("field 48", 0, zero48, reader.prev + 48)
-
-    assert_eq("field 88", 0, zero88, reader.prev + 88)
 
     # meshes always have vertices and polygons
     assert_gt("polygon count", 0, polygon_count, reader.prev + 16)
@@ -195,21 +167,21 @@ def _read_mesh(reader: BinReader) -> Mesh:
     assert_gt("vertex count", 0, vertex_count, reader.prev + 20)
     assert_ne("vertex ptr", 0, vertex_ptr, reader.prev + 56)
 
-    vertices = [cast(Vec3, reader.read(VEC_3D)) for _ in range(vertex_count)]
-
     if normal_count == 0:
         assert_eq("normal ptr", 0, normal_ptr, reader.prev + 60)
     else:
         assert_ne("normal ptr", 0, normal_ptr, reader.prev + 60)
 
-    normals = [cast(Vec3, reader.read(VEC_3D)) for _ in range(normal_count)]
+    assert_eq("light count", 0, light_count, reader.prev + 32)
+    assert_eq("light ptr", 0, light_ptr, reader.prev + 64)
 
     assert_eq("morph count", 0, morph_count, reader.prev + 28)
     assert_eq("morph ptr", 0, morph_ptr, reader.prev + 68)
 
-    assert_eq("light count", 0, light_count, reader.prev + 32)
-    assert_eq("light ptr", 0, light_ptr, reader.prev + 64)
+    assert_eq("field 88", 0, zero88, reader.prev + 88)
 
+    vertices = [cast(Vec3, reader.read(VEC3)) for _ in range(vertex_count)]
+    normals = [cast(Vec3, reader.read(VEC3)) for _ in range(normal_count)]
     polygons = _read_polygons(reader, polygon_count)
 
     LOG.debug("Read mesh")
@@ -217,12 +189,24 @@ def _read_mesh(reader: BinReader) -> Mesh:
     return Mesh(
         vertices=vertices,
         normals=normals,
+        morphs=[],
+        lights=[],
         polygons=polygons,
         polygon_ptr=polygon_ptr,
         vertex_ptr=vertex_ptr,
         normal_ptr=normal_ptr,
-        flag=unk08 == 3,
-        unknown=unknown,
+        light_ptr=0,
+        morph_ptr=0,
+        file_ptr=file_ptr,
+        zero04=zero04,
+        has_parents=has_parents,
+        unk08=unk08,
+        unk40=zero40,
+        unk44=zero44,
+        unk72=unk72,
+        unk76=unk76,
+        unk80=unk80,
+        unk84=unk84,
     )
 
 
@@ -405,14 +389,14 @@ def _write_polygons(f: BinaryIO, polygons: List[Polygon]) -> None:
 
         values = POLYGON.pack(
             vertex_info,
-            1 if polygon.flag else 0,
+            polygon.unk04,
             polygon.vertex_ptr,
             polygon.normal_ptr if polygon.normal_indices else 0,
             polygon.uv_ptr if polygon.uv_coords else 0,
             polygon.color_ptr,
             polygon.unk_ptr,
             polygon.texture_index,
-            0xFFFFFF00,
+            polygon.texture_info,
         )
         f.write(values)
 
@@ -422,9 +406,9 @@ def _write_polygons(f: BinaryIO, polygons: List[Polygon]) -> None:
         for normal in polygon.normal_indices:
             f.write(UINT32.pack(normal))
         for u, v in polygon.uv_coords:
-            f.write(VEC_2D.pack(u, 1.0 - v))
+            f.write(VEC2.pack(u, 1.0 - v))
         for color in polygon.vertex_colors:
-            f.write(VEC_3D.pack(*color))
+            f.write(VEC3.pack(*color))
 
     LOG.debug("Wrote polygons")
 
@@ -435,27 +419,46 @@ def _write_mesh(f: BinaryIO, mesh: Mesh) -> None:
     polygon_count = len(mesh.polygons)
     vertex_count = len(mesh.vertices)
     normal_count = len(mesh.normals)
+    morph_count = len(mesh.morphs)
+    light_count = len(mesh.lights)
 
-    # fmt: off
     values = MESH.pack(
-        0, 0, 3 if mesh.flag else 2, 1,
-        polygon_count, vertex_count, normal_count, 0, 0,
-        0, 0, 0, 0,
+        mesh.file_ptr,
+        mesh.zero04,
+        mesh.unk08,
+        mesh.has_parents,
+        polygon_count,
+        vertex_count,
+        normal_count,
+        morph_count,
+        light_count,
+        0,
+        mesh.unk40,
+        mesh.unk44,
+        0,
         mesh.polygon_ptr if polygon_count else 0,
         mesh.vertex_ptr if vertex_count else 0,
         mesh.normal_ptr if normal_count else 0,
-        0, 0,
-        *mesh.unknown,
+        mesh.light_ptr if light_count else 0,
+        mesh.morph_ptr if morph_count else 0,
+        mesh.unk72,
+        mesh.unk76,
+        mesh.unk80,
+        mesh.unk84,
         0,
     )
-    # fmt: on
     f.write(values)
 
     for vertex in mesh.vertices:
-        f.write(VEC_3D.pack(*vertex))
+        f.write(VEC3.pack(*vertex))
 
     for normal in mesh.normals:
-        f.write(VEC_3D.pack(*normal))
+        f.write(VEC3.pack(*normal))
+
+    for morph in mesh.morphs:
+        f.write(VEC3.pack(*morph))
+
+    # TODO: lights
 
     _write_polygons(f, mesh.polygons)
 

@@ -18,11 +18,10 @@ repos:
   - id: check-merge-conflict
   - id: check-added-large-files
     args:
-    - --maxkb=20
+    - --maxkb=64
 - repo: https://github.com/pre-commit/pygrep-hooks
   rev: v1.5.1
   hooks:
-  - id: rst-backticks
   - id: python-check-blanket-noqa
   - id: python-no-log-warn
   - id: python-no-eval

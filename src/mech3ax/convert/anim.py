@@ -1,6 +1,6 @@
 """Convert 'anim.zbd' files to JSON files.
 
-The conversion is lossless and produces a binary accurate output by default.
+The conversion is one-way only.
 """
 from argparse import Namespace, _SubParsersAction
 from pathlib import Path

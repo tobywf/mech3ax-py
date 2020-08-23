@@ -49,32 +49,32 @@ def read_materials(data: bytes) -> Iterable[Material]:
     for i in range(count):
         LOG.debug("Reading material %d at %d", i, reader.offset)
         (
-            unk1,
+            unk00,
             flag,
             rgb,
             red,
             green,
             blue,
             pointer,
-            unk2,
-            unk3,
-            unk4,
-            unk5,
+            unk20,
+            unk24,
+            unk28,
+            unk32,
             cycle_ptr,
         ) = reader.read(MATERIAL_INFO)
 
-        assert_in("field 00", (0x00, 0xFF), unk1, reader.prev + 0)
-        assert_eq("field 20", 0.0, unk2, reader.prev + 20)
-        assert_eq("field 24", 0.5, unk3, reader.prev + 24)
-        assert_eq("field 28", 0.5, unk4, reader.prev + 28)
-        assert_eq("field 32", 0, unk5, reader.prev + 32)
+        assert_in("field 00", (0x00, 0xFF), unk00, reader.prev + 0)
+        assert_eq("field 20", 0.0, unk20, reader.prev + 20)
+        assert_eq("field 24", 0.5, unk24, reader.prev + 24)
+        assert_eq("field 28", 0.5, unk28, reader.prev + 28)
+        assert_eq("field 32", 0, unk32, reader.prev + 32)
         assert_eq("cycle pointer", 0, cycle_ptr, reader.prev + 36)
 
         textured = (flag & 1) == 1
 
         if textured:
+            # TODO: in GameZ, unk00 has to be 0xFF if textured
             assert_ne("pointer", 0, pointer, reader.prev + 16)
-            # this seems to be RGB555, not RGB565?
             assert_eq("rgb", 0x7FFF, rgb, reader.prev + 2)
             assert_eq("red", 255.0, red, reader.prev + 4)
             assert_eq("green", 255.0, green, reader.prev + 8)
@@ -90,7 +90,7 @@ def read_materials(data: bytes) -> Iterable[Material]:
         yield Material(
             name=name,
             flag=flag,
-            unk=unk1,
+            unk=unk00,
             rgb=rgb,
             red=red,
             green=green,

@@ -30,8 +30,8 @@ DUMMY_IMPORT = None
 
 class LightFlag(IntFlag):
     Inactive = 0
-    # This flag never occurs
-    # TranslationAbs = 1 << 0
+    # This flag never occurs in animations, but does in GameZ
+    TranslationAbs = 1 << 0
     Translation = 1 << 1
     Rotation = 1 << 2
     Range = 1 << 3

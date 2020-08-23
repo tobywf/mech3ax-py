@@ -157,8 +157,8 @@ def assert_ascii(
 ) -> Iterator[None]:
     try:
         yield
-    except UnicodeDecodeError:
-        raise error_class(f"{name}: {actual!r} is not ASCII (at {location})")
+    except UnicodeDecodeError as e:
+        raise error_class(f"{name}: {actual!r} is not ASCII (at {location})") from e
 
 
 @contextmanager
@@ -170,8 +170,8 @@ def assert_flag(
 ) -> Iterator[None]:
     try:
         yield
-    except ValueError:
-        raise error_class(f"{name}: 0x{actual:08X} is not valid (at {location})")
+    except ValueError as e:
+        raise error_class(f"{name}: 0x{actual:08X} is not valid (at {location})") from e
 
 
 def assert_all_zero(name: str, data: Union[bytes, bytearray], location: int) -> None:

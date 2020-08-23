@@ -30,4 +30,11 @@ def force_single_prec(value: float) -> float:
     return value
 
 
-__all__ = ["force_single_prec", "euler_to_matrix"]
+def approx_sqrt(value: float) -> float:
+    (cast,) = unpack("i", pack("f", value))
+    approx = (cast >> 1) + 0x1FC00000
+    (value,) = unpack("f", pack("i", approx))
+    return value
+
+
+__all__ = ["force_single_prec", "euler_to_matrix", "approx_sqrt"]

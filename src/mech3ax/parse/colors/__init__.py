@@ -1,4 +1,5 @@
 import logging
+import warnings
 from typing import TYPE_CHECKING, Sequence
 
 from PIL import Image
@@ -13,7 +14,9 @@ else:
     try:
         from ._native import rgb565to888, rgb888to565, check_palette
     except ImportError:
-        LOG.warning("C extension could not be imported, textures will be slow")
+        MSG = "C extension could not be imported, textures will be slow"
+        warnings.warn(MSG)
+        LOG.warning(MSG)
         from .fallback import rgb565to888, rgb888to565, check_palette
 
 
