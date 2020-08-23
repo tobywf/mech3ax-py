@@ -16,12 +16,14 @@ from ..parse.mechlib import (
     FORMAT_DATA,
     VERSION_DATA,
     Material,
+    Node,
     read_format,
     read_materials,
+    read_model,
     read_version,
     write_materials,
+    write_model,
 )
-from ..parse.model3d import Node, read_model, write_model
 from .archive import MANIFEST, ArchiveInfo, ArchiveManifest, Renamer
 from .utils import dir_exists, output_resolve, path_exists
 

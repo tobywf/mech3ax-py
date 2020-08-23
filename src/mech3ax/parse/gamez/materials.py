@@ -3,7 +3,6 @@ from typing import BinaryIO, List, Optional, Tuple
 
 from mech3ax.errors import assert_between, assert_eq, assert_flag, assert_in, assert_ne
 
-from ..models import Vec3
 from ..utils import BinReader
 from .models import (
     CYCLE_HEADER,
@@ -12,6 +11,7 @@ from .models import (
     Cycle,
     Material,
     MaterialFlag,
+    Vec3,
 )
 
 

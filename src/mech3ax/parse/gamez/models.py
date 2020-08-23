@@ -9,7 +9,16 @@ from pydantic import BaseModel
 from mech3ax.serde import NodeType as NodeType
 
 from ..int_flag import IntFlag
-from ..models import Mesh as Mesh, Vec2, Vec3  # pylint: disable=unused-import
+from ..models import (  # pylint: disable=unused-import
+    IDENTITY_MATRIX as IDENTITY_MATRIX,
+    NODE_INFO as NODE_INFO,
+    OBJECT3D as OBJECT3D,
+    Matrix as Matrix,
+    Mesh as Mesh,
+    Object3d as Object3d,
+    Vec2 as Vec2,
+    Vec3 as Vec3,
+)
 
 SINT32 = Struct("<i")
 
@@ -31,9 +40,6 @@ assert CYCLE_HEADER.size == 28, CYCLE_HEADER.size
 MESHES_HEADER = Struct("<3I")
 assert MESHES_HEADER.size == 12, MESHES_HEADER.size
 
-NODE_INFO = Struct("<36s 4I 2Ii 3I 2i 4I 4I 6f 6f 6f 5I")
-assert NODE_INFO.size == 208, NODE_INFO.size
-
 CAMERA = Struct("<5i 3f 3f 132s 2f 24s 10f I60s I72s I72s I 2f 3i")
 assert CAMERA.size == 488, CAMERA.size
 
@@ -45,9 +51,6 @@ assert WINDOW.size == 248, WINDOW.size
 
 DISPLAY = Struct("<4I 3f")
 assert DISPLAY.size == 28, DISPLAY.size
-
-OBJECT3D = Struct("<I f 4f 3f 3f 3f 3f 3f 3f 48s")
-assert OBJECT3D.size == 144, OBJECT3D.size
 
 LEVEL_OF_DETAIL = Struct("<I 3f 44s 2f 3I")
 assert LEVEL_OF_DETAIL.size == 80, LEVEL_OF_DETAIL.size
@@ -97,16 +100,6 @@ class LevelOfDetail(BaseModel):
     level: bool
     range: Vec2
     unk: float
-
-
-Matrix = Tuple[float, float, float, float, float, float, float, float, float]
-
-
-class Object3d(BaseModel):
-    type: Literal["Object3D"]
-    rotation: Optional[Vec3]
-    translation: Optional[Vec3]
-    matrix: Optional[Matrix]
 
 
 class Partition(BaseModel):

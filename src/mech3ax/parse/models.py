@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from struct import Struct
-from typing import List, Tuple
+from typing import List, Literal, Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -26,7 +26,10 @@ assert MESH.size == 92, MESH.size
 LIGHT = Struct("<3I I 3I 4f I 7f")
 assert LIGHT.size == 76
 
-OBJECT3D = Struct("<I f 4f 3f 3f 3f 3f 3f 3f 12I")
+NODE_INFO = Struct("<36s 4I 2Ii 3I 2i 4I 4I 6f 6f 6f 5I")
+assert NODE_INFO.size == 208, NODE_INFO.size
+
+OBJECT3D = Struct("<I f 4f 3f 3f 3f 3f 3f 3f 48s")
 assert OBJECT3D.size == 144, OBJECT3D.size
 
 
@@ -68,6 +71,18 @@ class Polygon(BaseModel):
     uv_ptr: int
     color_ptr: int
     unk_ptr: int
+
+
+Matrix = Tuple[float, float, float, float, float, float, float, float, float]
+IDENTITY_MATRIX: Matrix = (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+
+
+class Object3d(BaseModel):
+    type: Literal["Object3D"]
+    rotation: Optional[Vec3]
+    translation: Optional[Vec3]
+    matrix: Optional[Matrix]
+    matrix_sign: int
 
 
 class Mesh(BaseModel):

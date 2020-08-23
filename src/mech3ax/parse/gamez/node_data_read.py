@@ -1,4 +1,4 @@
-from math import pi, sqrt, tan
+from math import copysign, pi, sqrt, tan
 from typing import Callable, Dict, List, Sequence
 
 from mech3ax.errors import (
@@ -21,6 +21,7 @@ from ..utils import BinReader
 from .models import (
     CAMERA,
     DISPLAY,
+    IDENTITY_MATRIX,
     LEVEL_OF_DETAIL,
     LIGHT,
     OBJECT3D,
@@ -32,7 +33,6 @@ from .models import (
     LevelOfDetail,
     Light,
     Matrix,
-    Node,
     NodeData,
     Object3d,
     Partition,
@@ -51,7 +51,7 @@ LIGHT_FLAG = (
 )
 PI = force_single_prec(pi)
 
-ReadNodeData = Callable[[BinReader, Node], NodeData]
+ReadNodeData = Callable[[BinReader], NodeData]
 READ_NODE_DATA: Dict[NodeType, ReadNodeData] = {}
 
 
@@ -64,13 +64,13 @@ def _read_node_data(node_type: NodeType) -> Callable[[ReadNodeData], ReadNodeDat
 
 
 @_read_node_data(NodeType.Empty)
-def _read_node_data_empty(_reader: BinReader, _node: Node) -> None:
+def _read_node_data_empty(_reader: BinReader) -> None:
     raise Mech3InternalError("Empty nodes shouldn't be read")
 
 
 @_read_node_data(NodeType.Camera)
 def _read_node_data_camera(  # pylint: disable=too-many-locals
-    reader: BinReader, node: Node
+    reader: BinReader,
 ) -> Camera:
     (
         world_index,  # 000
@@ -171,10 +171,6 @@ def _read_node_data_camera(  # pylint: disable=too-many-locals
     assert_eq("stride", 0, stride, reader.prev + 476)
     assert_eq("zone set", 0, zone_set, reader.prev + 480)
     assert_eq("field 484", -256, unk484, reader.prev + 484)
-
-    # we have already checked that camera nodes have no parents and no children
-    assert_eq("parent count", 0, node.parent_count, reader.offset)
-    assert_eq("children count", 0, node.children_count, reader.offset)
 
     return Camera(
         type="Camera", clip=(clip_near_z, clip_far_z), fov=(fov_h_base, fov_v_base)
@@ -280,7 +276,7 @@ def _read_partitions(  # pylint: disable=too-many-locals
 
 @_read_node_data(NodeType.World)
 def _read_node_data_world(  # pylint: disable=too-many-locals,too-many-statements
-    reader: BinReader, _node: Node
+    reader: BinReader,
 ) -> World:
     (
         flag_raw,  # 000
@@ -445,7 +441,7 @@ def _read_node_data_world(  # pylint: disable=too-many-locals,too-many-statement
 
 
 @_read_node_data(NodeType.Window)
-def _read_node_data_window(reader: BinReader, node: Node) -> Window:
+def _read_node_data_window(reader: BinReader) -> Window:
     (
         origin_x,  # 000
         origin_y,  # 004
@@ -476,10 +472,6 @@ def _read_node_data_window(reader: BinReader, node: Node) -> Window:
 
     # window nodes always have an action priority of 14
 
-    # we have already checked that window nodes have no parents and no children
-    assert_eq("parent count", 0, node.parent_count, reader.offset)
-    assert_eq("children count", 0, node.children_count, reader.offset)
-
     return Window(
         type="Window",
         origin=(origin_x, origin_y),
@@ -488,7 +480,7 @@ def _read_node_data_window(reader: BinReader, node: Node) -> Window:
 
 
 @_read_node_data(NodeType.Display)
-def _read_node_data_display(reader: BinReader, _node: Node) -> Display:
+def _read_node_data_display(reader: BinReader) -> Display:
     (
         origin_x,
         origin_y,
@@ -522,9 +514,28 @@ def _read_node_data_display(reader: BinReader, _node: Node) -> Display:
     )
 
 
-@_read_node_data(NodeType.Object3D)
-def _read_node_data_object3d(  # pylint: disable=too-many-locals
-    reader: BinReader, _node: Node
+def _extract_zero_signs(*values: float) -> int:
+    """Extract the zero sign from floats (i.e. if the value is 0.0 or -0.0).
+
+    This is required for complete binary accuracy, since in Python, ``0.0 == -0.0``.
+    So when we compare against the calculated matrix or identity matrix, the
+    zero sign will be ignored. This function saves them for writing.
+    """
+    signs = 0
+    for i, value in enumerate(values):
+        bit = 1 << i
+        if value == 0.0 and copysign(1.0, value) < 0.0:
+            signs |= bit
+    return signs
+
+
+assert (
+    copysign(1.0, -0.0) < 0.0
+), "Running on a platform that doesn't support signed zeros"
+
+
+def read_node_data_object3d(  # pylint: disable=too-many-locals
+    reader: BinReader,
 ) -> Object3d:
     (
         flag_raw,  # 000
@@ -579,6 +590,18 @@ def _read_node_data_object3d(  # pylint: disable=too-many-locals
         assert_eq("matrix 21", expected[7], matrix21, reader.prev + 76)
         assert_eq("matrix 22", expected[8], matrix22, reader.prev + 80)
 
+    matrix_sign = _extract_zero_signs(
+        matrix00,
+        matrix01,
+        matrix02,
+        matrix10,
+        matrix11,
+        matrix12,
+        matrix20,
+        matrix21,
+        matrix22,
+    )
+
     if flag_raw == 40:
         assert_eq("rot x", 0.0, rot_x, reader.prev + 24)
         assert_eq("rot y", 0.0, rot_y, reader.prev + 28)
@@ -588,13 +611,13 @@ def _read_node_data_object3d(  # pylint: disable=too-many-locals
         assert_eq("trans y", 0.0, trans_y, reader.prev + 88)
         assert_eq("trans z", 0.0, trans_z, reader.prev + 92)
 
-        expected = (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
-        _assert_matrix(expected)
+        _assert_matrix(IDENTITY_MATRIX)
 
         rotation = None
         translation = None
         matrix = None
     else:
+        # all values between PI
         assert_between("rot x", -PI, PI, rot_x, reader.prev + 24)
         assert_between("rot y", -PI, PI, rot_y, reader.prev + 28)
         assert_between("rot z", -PI, PI, rot_z, reader.prev + 32)
@@ -620,18 +643,28 @@ def _read_node_data_object3d(  # pylint: disable=too-many-locals
                 matrix21,
                 matrix22,
             )
+            matrix_sign = 0
         else:
             matrix = None
 
     # object 3d nodes always have an action priority of 6
 
     return Object3d(
-        type="Object3D", rotation=rotation, translation=translation, matrix=matrix,
+        type="Object3D",
+        rotation=rotation,
+        translation=translation,
+        matrix=matrix,
+        matrix_sign=matrix_sign,
     )
 
 
+@_read_node_data(NodeType.Object3D)
+def _read_node_data_object3d(reader: BinReader) -> Object3d:
+    return read_node_data_object3d(reader)
+
+
 @_read_node_data(NodeType.LOD)
-def _read_node_data_lod(reader: BinReader, _node: Node) -> LevelOfDetail:
+def _read_node_data_lod(reader: BinReader) -> LevelOfDetail:
     (
         level,  # 00
         range_near_sq,  # 04
@@ -680,7 +713,7 @@ def _read_node_data_lod(reader: BinReader, _node: Node) -> LevelOfDetail:
 
 @_read_node_data(NodeType.Light)
 def _read_node_data_light(  # pylint: disable=too-many-locals
-    reader: BinReader, node: Node
+    reader: BinReader,
 ) -> Light:
     (
         direction_x,  # 000
@@ -751,11 +784,6 @@ def _read_node_data_light(  # pylint: disable=too-many-locals
     assert_eq("field 208", 0, zero208, reader.prev + 208)
 
     # light nodes always have an action priority of 9
-
-    # we have already checked that window nodes have no parents (because of the
-    # internal pointer?). additionally, they only seem to have up to 1 child
-    assert_eq("parent count", 0, node.parent_count, reader.offset)
-    assert_in("children count", (0, 1), node.children_count, reader.offset)
 
     return Light(
         type="Light",

@@ -75,14 +75,16 @@ def _process_node(node, parent, material_factory):
     object3d = node["object3d"]
     mesh_data = node["mesh"]
     children = node["children"]
+    translation = object3d["translation"]
+    rotation = object3d["rotation"]
 
     if not mesh_data:
         obj = bpy.data.objects.new(name, None)  # empty
     else:
         obj = _process_mesh(name, mesh_data, material_factory)
 
-    obj.location = (object3d["trans_x"], object3d["trans_y"], object3d["trans_z"])
-    obj.rotation_euler = (object3d["rot_x"], object3d["rot_y"], object3d["rot_z"])
+    obj.location = translation if translation else (0.0, 0.0, 0.0)
+    obj.rotation_euler = rotation if rotation else (0.0, 0.0, 0.0)
 
     bpy.context.collection.objects.link(obj)
 
@@ -182,7 +184,7 @@ def model_to_blend(root_node, material_factory, name, anim):
 
 class MaterialFactory:
     def __init__(self, mechtex, materials):
-        self.mechtex = ZipFile(mechtex)
+        self.mechtex = ZipFile(mechtex) if mechtex else None
         self.materials = materials
         self.cache = {}
 
@@ -211,17 +213,18 @@ class MaterialFactory:
                 bsdf = mat.node_tree.nodes["Principled BSDF"]
                 bsdf.inputs[0].default_value = (red, green, blue, 1)
         else:
-            self.mechtex.extract(f"{material_name}.png")
-
             mat = bpy.data.materials.new(material_name)
             mat.use_nodes = True
             bsdf = mat.node_tree.nodes["Principled BSDF"]
-            image = bpy.data.images.load(f"//{material_name}.png")
 
-            tex = mat.node_tree.nodes.new("ShaderNodeTexImage")
-            tex.image = image
+            if self.mechtex:
+                self.mechtex.extract(f"{material_name}.png")
+                image = bpy.data.images.load(f"//{material_name}.png")
 
-            mat.node_tree.links.new(bsdf.inputs["Base Color"], tex.outputs["Color"])
+                tex = mat.node_tree.nodes.new("ShaderNodeTexImage")
+                tex.image = image
+
+                mat.node_tree.links.new(bsdf.inputs["Base Color"], tex.outputs["Color"])
 
         self.cache[texture_index] = mat
         return mat
@@ -247,6 +250,9 @@ def main():
             "multiple key-framed animations to a Blender file.)"
         ),
     )
+    parser.add_argument(
+        "--no-tex", action="store_true", help="If specified, textures are skipped.",
+    )
 
     # split our arguments from Blender arguments
     argv = sys.argv
@@ -255,7 +261,11 @@ def main():
     args = parser.parse_args(argv)
 
     mechlib = (args.directory / "mechlib.zip").resolve(strict=True)
-    mechtex = (args.directory / "rmechtex.zip").resolve(strict=True)
+
+    if args.no_tex:
+        mechtex = None
+    else:
+        mechtex = (args.directory / "rmechtex.zip").resolve(strict=True)
 
     if args.anim:
         name = f"{args.model_name}_{args.anim}"

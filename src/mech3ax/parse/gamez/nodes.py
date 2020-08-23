@@ -13,7 +13,7 @@ from mech3ax.serde import NodeType
 
 from ..utils import UINT32, BinReader, ascii_zterm_node_name
 from .models import NODE_FLAG_BASE, NODE_INFO, Node, NodeFlag
-from .node_data import READ_NODE_DATA
+from .node_data_read import READ_NODE_DATA
 from .node_info import ASSERT_NODE_INFO
 
 
@@ -175,7 +175,7 @@ def _read_node_infos_zero(reader: BinReader, index: int, array_size: int) -> Non
 
 def _read_node_data(reader: BinReader, node: Node) -> None:
     read_data_fn = READ_NODE_DATA[node.node_type]
-    node.data = read_data_fn(reader, node)
+    node.data = read_data_fn(reader)
 
     # read parent
     if node.parent_count:
