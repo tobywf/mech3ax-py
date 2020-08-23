@@ -53,7 +53,7 @@ class NodeType(Enum):
 
     @classmethod
     def __modify_schema__(cls, field_schema: Dict[str, str]) -> None:
-        field_schema.update(type="str")
+        field_schema.update(type="str")  # pragma: no cover
 
     @classmethod
     def validate(cls, value: Union[str, NodeType]) -> NodeType:
@@ -62,7 +62,7 @@ class NodeType(Enum):
         if isinstance(value, str):
             try:
                 return NodeType.__members__[value]
-            except KeyError as e:
+            except KeyError as e:  # pragma: no cover
                 raise ValueError(f"{value!r} is not a valid NodeType") from e
         raise TypeError("string or NodeType required")  # pragma: no cover
 

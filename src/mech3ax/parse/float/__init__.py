@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING
 
 LOG = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .fallback import euler_to_matrix
 else:
     try:
         from ._native import euler_to_matrix
-    except ImportError:
+    except ImportError:  # pragma: no cover
         MSG = "C extension could not be imported, comparisons may fail"
         warnings.warn(MSG)
         LOG.warning(MSG)

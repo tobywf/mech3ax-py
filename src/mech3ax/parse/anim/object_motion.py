@@ -341,38 +341,16 @@ class ObjectMotion(ScriptObject):
             assert_gt("bounce snd 0 volume", 0.0, bounce_snd0_volume, reader.prev + 232)
             sound = anim_def.get_sound(bounce_snd0_index - 1, reader.prev + 230)
             bounce_sounds.append((sound, bounce_snd0_volume))
-
-            if bounce_snd1_index:
-                assert_gt(
-                    "bounce snd 1 volume", 0.0, bounce_snd1_volume, reader.prev + 272
-                )
-                sound = anim_def.get_sound(bounce_snd1_index - 1, reader.prev + 270)
-                bounce_sounds.append((sound, bounce_snd1_volume))
-            else:
-                assert_eq(
-                    "bounce snd 1 volume", 0.0, bounce_snd1_volume, reader.prev + 272
-                )
-
-            if bounce_snd2_index:
-                assert_gt(
-                    "bounce snd 2 volume", 0.0, bounce_snd2_volume, reader.prev + 312
-                )
-                sound = anim_def.get_sound(bounce_snd2_index - 1, reader.prev + 310)
-                bounce_sounds.append((sound, bounce_snd2_volume))
-            else:
-                assert_eq(
-                    "bounce snd 2 volume", 0.0, bounce_snd2_volume, reader.prev + 312
-                )
-
         else:
             assert_eq("bounce snd 0 sound", 0, bounce_snd0_index, reader.prev + 230)
             assert_eq("bounce snd 0 volume", 0.0, bounce_snd0_volume, reader.prev + 232)
 
-            assert_eq("bounce snd 1 sound", 0, bounce_snd1_index, reader.prev + 270)
-            assert_eq("bounce snd 1 volume", 0.0, bounce_snd1_volume, reader.prev + 272)
+        # these are never set, regardless of the flag
+        assert_eq("bounce snd 1 sound", 0, bounce_snd1_index, reader.prev + 270)
+        assert_eq("bounce snd 1 volume", 0.0, bounce_snd1_volume, reader.prev + 272)
 
-            assert_eq("bounce snd 2 sound", 0, bounce_snd2_index, reader.prev + 310)
-            assert_eq("bounce snd 2 volume", 0.0, bounce_snd2_volume, reader.prev + 312)
+        assert_eq("bounce snd 2 sound", 0, bounce_snd2_index, reader.prev + 310)
+        assert_eq("bounce snd 2 volume", 0.0, bounce_snd2_volume, reader.prev + 312)
 
         if MotionFlag.RunTime(flag):
             assert_gt("run time", 0.0, run_time, reader.prev + 316)

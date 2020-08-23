@@ -8,16 +8,16 @@ T = TypeVar("T", bound="Comparable")
 
 class Comparable(Protocol):
     def __lt__(self: T, other: T) -> bool:
-        pass
+        pass  # pragma: no cover
 
     def __le__(self: T, other: T) -> bool:
-        pass
+        pass  # pragma: no cover
 
     def __gt__(self: T, other: T) -> bool:
-        pass
+        pass  # pragma: no cover
 
     def __ge__(self: T, other: T) -> bool:
-        pass
+        pass  # pragma: no cover
 
 
 class Mech3Error(Exception):
@@ -42,6 +42,10 @@ class Mech3TextureError(Mech3Error):
 
 class Mech3MaterialError(Mech3Error):
     """An error when writing a texture."""
+
+
+class Mech3NodeError(Mech3Error):
+    """An error when writing a node."""
 
 
 def _assert_base(  # pylint: disable=too-many-arguments
@@ -142,7 +146,7 @@ def assert_between(  # pylint: disable=too-many-arguments
     location: Union[int, str],
     error_class: Type[Mech3Error] = Mech3ParseError,
 ) -> None:
-    if expected_low > actual or actual > expected_high:
+    if expected_low > actual or actual > expected_high:  # pragma: no cover
         raise error_class(
             f"{name}: {expected_low!r} <= {actual!r} <= {expected_high!r} (at {location})"
         )
@@ -157,7 +161,7 @@ def assert_ascii(
 ) -> Iterator[None]:
     try:
         yield
-    except UnicodeDecodeError as e:
+    except UnicodeDecodeError as e:  # pragma: no cover
         raise error_class(f"{name}: {actual!r} is not ASCII (at {location})") from e
 
 
@@ -170,7 +174,7 @@ def assert_flag(
 ) -> Iterator[None]:
     try:
         yield
-    except ValueError as e:
+    except ValueError as e:  # pragma: no cover
         raise error_class(f"{name}: 0x{actual:08X} is not valid (at {location})") from e
 
 

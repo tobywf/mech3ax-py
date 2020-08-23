@@ -312,7 +312,7 @@ def write_textures(f: BinaryIO, textures: Iterable[DecodedTexture]) -> None:
         elif mode in ("RGB", "P"):
             img = texture.image
             alpha_data = None
-        else:
+        else:  # pragma: no cover
             raise Mech3TextureError(f"Unsupported mode {mode} for {texture.name!r}")
 
         if not TextureFlag.FullAlpha(texture.flag):

@@ -311,7 +311,8 @@ class ObjectConnector(ScriptObject):
         to_input_pos = ConnectorFlag.ToInputPos(flag)
 
         to_node: Optional[str] = None
-        if ConnectorFlag.ToNode(flag):
+        if ConnectorFlag.ToNode(flag):  # pragma: no cover
+            # this never happens in my files, but symmetry
             assert_eq("to input node", False, to_input_node, reader.prev + 0)
             assert_eq("to input pos", False, to_input_pos, reader.prev + 0)
             to_node = anim_def.get_node(to_index - 1, reader.prev + 8)

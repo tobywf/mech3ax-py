@@ -25,7 +25,7 @@ def _ascii_zterm_suffix(buf: bytes) -> Tuple[str, str]:
     # they used a "trick" to encode the texture names: replace the '.' in filenames
     # with a null character. however, some texture names have no suffix.
     # additionally, for long filenames, the suffix is cut off
-    for suffix_bytes, suffix_ascii, suffix_len in SUFFIXES:
+    for suffix_bytes, suffix_ascii, suffix_len in SUFFIXES:  # pragma: no branch
         compare = bytearray(max(len(buf), null_index + suffix_len))
         compare[: null_index + 1] = buf[: null_index + 1]
         compare[null_index + 1 : null_index + suffix_len + 1] = suffix_bytes
@@ -33,7 +33,7 @@ def _ascii_zterm_suffix(buf: bytes) -> Tuple[str, str]:
         if buf == bytes(compare[: len(buf)]):
             return (buf[:null_index].decode("ascii"), suffix_ascii)
 
-    raise ValueError("No match for suffixes")
+    raise ValueError("No match for suffixes")  # pragma: no cover
 
 
 def read_textures(reader: BinReader, count: int) -> List[Texture]:

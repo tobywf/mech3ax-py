@@ -49,6 +49,7 @@ combine_as_imports = true
 
 [tool.coverage.run]
 branch = true
+source = ["mech3ax"]
 
 [tool.coverage.report]
 #fail_under = 100

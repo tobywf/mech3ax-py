@@ -83,7 +83,7 @@ class Comparison(ScriptObject):
 
     @classmethod
     def read(cls: Type[T], reader: BinReader, anim_def: AnimDef) -> T:
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
 
 IF_COND: Mapping[

@@ -16,14 +16,7 @@ from mech3ax.errors import (
 
 from ..int_flag import IntFlag
 from ..utils import BinReader, ascii_zterm_padded
-from .models import (
-    INPUT_NODE,
-    AnimDef,
-    AtNodeFlex,
-    AtNodeLong,
-    AtNodeShort,
-    ScriptObject,
-)
+from .models import INPUT_NODE, AnimDef, AtNodeShort, ScriptObject
 
 DUMMY_IMPORT = None
 
@@ -55,7 +48,7 @@ class LightState(ScriptObject):
 
     name: str
     active_state: bool
-    at_node: AtNodeFlex = None
+    at_node: Optional[AtNodeShort] = None
     range: Range = None
     color: Color = None
     ambient: Optional[float] = None
@@ -156,22 +149,19 @@ class LightState(ScriptObject):
             assert_eq("rot y", 0.0, ry, reader.prev + 84)
             assert_eq("rot z", 0.0, rz, reader.prev + 88)
 
-            at_node: AtNodeFlex = None
+            at_node = None
         else:
             if node_index == -200:
                 node = INPUT_NODE
             else:
                 node = anim_def.get_node(node_index - 1, reader.prev + 64)
 
-            if LightFlag.Rotation(flag):
-                at_node = AtNodeLong(
-                    node=node, tx=tx, ty=ty, tz=tz, rx=rx, ry=ry, rz=rz
-                )
-            else:
-                assert_eq("rot x", 0.0, rx, reader.prev + 80)
-                assert_eq("rot y", 0.0, ry, reader.prev + 84)
-                assert_eq("rot z", 0.0, rz, reader.prev + 88)
-                at_node = AtNodeShort(node=node, tx=tx, ty=ty, tz=tz)
+            # this is never set
+            assert_eq("rotation", False, LightFlag.Rotation(flag), reader.prev + 36)
+            assert_eq("rot x", 0.0, rx, reader.prev + 80)
+            assert_eq("rot y", 0.0, ry, reader.prev + 84)
+            assert_eq("rot z", 0.0, rz, reader.prev + 88)
+            at_node = AtNodeShort(node=node, tx=tx, ty=ty, tz=tz)
 
         if LightFlag.Range(flag):
             assert_ge("range min", 0.0, range_min, reader.prev + 92)

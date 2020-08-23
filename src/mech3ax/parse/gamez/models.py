@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from mech3ax.serde import NodeType as NodeType
 
+from ..anim.light import LightFlag
 from ..int_flag import IntFlag
 from ..models import (  # pylint: disable=unused-import
     IDENTITY_MATRIX as IDENTITY_MATRIX,
@@ -46,7 +47,7 @@ assert CAMERA.size == 488, CAMERA.size
 WORLD = Struct("<5I 3f 2f 2f f 2f 2f 2f 2I 4I 7f 2f 3I 3f 3I 2I 2I")
 assert WORLD.size == 188, WORLD.size
 
-WINDOW = Struct("<4i 212s 5i")
+WINDOW = Struct("<4I 212s i4I")
 assert WINDOW.size == 248, WINDOW.size
 
 DISPLAY = Struct("<4I 3f")
@@ -65,21 +66,28 @@ assert PARTITION.size == 72, PARTITION.size
 
 class Display(BaseModel):
     type: Literal["Display"]
-    origin: Tuple[int, int]
     resolution: Tuple[int, int]
     clear_color: Vec3
 
 
 class Window(BaseModel):
     type: Literal["Window"]
-    origin: Tuple[int, int]
     resolution: Tuple[int, int]
+
+
+LIGHT_FLAG = (
+    LightFlag.Subdivide
+    | LightFlag.Saturated
+    | LightFlag.Directional
+    | LightFlag.Range
+    | LightFlag.Translation
+    | LightFlag.TranslationAbs
+)
 
 
 class Light(BaseModel):
     type: Literal["Light"]
     direction: Vec3
-    translation: Vec3
     diffuse: float
     ambient: float
     color: Vec3
@@ -99,7 +107,8 @@ class LevelOfDetail(BaseModel):
     type: Literal["LOD"]
     level: bool
     range: Vec2
-    unk: float
+    unk60: float
+    unk76: int
 
 
 class Partition(BaseModel):
@@ -119,12 +128,16 @@ class World(BaseModel):
 
     area_partition_x_count: int
     area_partition_y_count: int
+    fudge_count: bool = False
 
     area_partition_ptr: int
     virt_partition_ptr: int
 
     children_ptr: int
     lights_ptr: int
+
+
+NodeData = Union[Display, Window, Light, Camera, LevelOfDetail, Object3d, World, None]
 
 
 class NodeFlag(IntFlag):
@@ -167,8 +180,6 @@ NODE_FLAG_BASE = NodeFlag.Active | NodeFlag.TreeValid | NodeFlag.IDZoneCheck
 NODE_FLAG_DEFAULT = (
     NODE_FLAG_BASE | NodeFlag.AltitudeSurface | NodeFlag.IntersectSurface
 )
-
-NodeData = Union[Display, Window, Light, Camera, LevelOfDetail, Object3d, World, None]
 
 
 class Node(BaseModel):

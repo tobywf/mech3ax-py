@@ -1,4 +1,4 @@
-from math import copysign, pi, sqrt, tan
+from math import pi, sqrt, tan
 from typing import Callable, Dict, List, Sequence
 
 from mech3ax.errors import (
@@ -24,6 +24,7 @@ from .models import (
     IDENTITY_MATRIX,
     LEVEL_OF_DETAIL,
     LIGHT,
+    LIGHT_FLAG,
     OBJECT3D,
     PARTITION,
     WINDOW,
@@ -39,16 +40,9 @@ from .models import (
     Window,
     World,
 )
+from .sign import extract_zero_signs
 
 CLEAR_COLOR = 0.3919999897480011
-LIGHT_FLAG = (
-    LightFlag.Subdivide
-    | LightFlag.Saturated
-    | LightFlag.Directional
-    | LightFlag.Range
-    | LightFlag.Translation
-    | LightFlag.TranslationAbs
-)
 PI = force_single_prec(pi)
 
 ReadNodeData = Callable[[BinReader], NodeData]
@@ -65,7 +59,7 @@ def _read_node_data(node_type: NodeType) -> Callable[[ReadNodeData], ReadNodeDat
 
 @_read_node_data(NodeType.Empty)
 def _read_node_data_empty(_reader: BinReader) -> None:
-    raise Mech3InternalError("Empty nodes shouldn't be read")
+    raise Mech3InternalError("Empty nodes shouldn't be read")  # pragma: no cover
 
 
 @_read_node_data(NodeType.Camera)
@@ -365,6 +359,9 @@ def _read_node_data_world(  # pylint: disable=too-many-locals,too-many-statement
     )
     assert_eq("virtual partition", 1, virtual_partition, reader.prev + 80)
 
+    assert_eq("vp x min", 1, virt_partition_x_min, reader.prev + 84)
+    assert_eq("vp y min", 1, virt_partition_y_min, reader.prev + 88)
+
     assert_eq("vp x size", 256.0, virt_partition_x_size, reader.prev + 100)
     assert_eq("vp y size", -256.0, virt_partition_y_size, reader.prev + 104)
     assert_eq("vp x half", 128.0, virt_partition_x_half, reader.prev + 108)
@@ -385,6 +382,12 @@ def _read_node_data_world(  # pylint: disable=too-many-locals,too-many-statement
     assert_eq("vp x count", len(area_x), virt_partition_x_count, reader.prev + 136)
     assert_eq("vp y count", len(area_y), virt_partition_y_count, reader.prev + 140)
     assert_eq("ap used", 0, area_partition_used, reader.prev + 4)
+    assert_eq(
+        "vp x max", virt_partition_x_count - 1, virt_partition_x_max, reader.prev + 92,
+    )
+    assert_eq(
+        "vp y max", virt_partition_y_count - 1, virt_partition_y_max, reader.prev + 96,
+    )
 
     # TODO: why isn't this a perfect fit for T1?
     virt_partition_count = virt_partition_x_count * virt_partition_y_count
@@ -395,17 +398,9 @@ def _read_node_data_world(  # pylint: disable=too-many-locals,too-many-statement
         area_partition_count,
         reader.prev + 8,
     )
+    fudge_count = area_partition_count != virt_partition_count
     assert_ne("ap ptr", 0, area_partition_ptr, reader.prev + 12)
     assert_ne("vp ptr", 0, virt_partition_ptr, reader.prev + 144)
-
-    assert_eq("vp x min", 1, virt_partition_x_min, reader.prev + 84)
-    assert_eq("vp y min", 1, virt_partition_y_min, reader.prev + 88)
-    assert_eq(
-        "vp x max", virt_partition_x_count - 1, virt_partition_x_max, reader.prev + 92,
-    )
-    assert_eq(
-        "vp y max", virt_partition_y_count - 1, virt_partition_y_max, reader.prev + 96,
-    )
 
     assert_eq("field 148", 1, one148, reader.prev + 148)
     assert_eq("field 152", 1, one152, reader.prev + 152)
@@ -433,6 +428,7 @@ def _read_node_data_world(  # pylint: disable=too-many-locals,too-many-statement
         children=[child],
         area_partition_x_count=virt_partition_x_count,
         area_partition_y_count=virt_partition_y_count,
+        fudge_count=fudge_count,
         area_partition_ptr=area_partition_ptr,
         virt_partition_ptr=virt_partition_ptr,
         children_ptr=children_ptr,
@@ -472,11 +468,7 @@ def _read_node_data_window(reader: BinReader) -> Window:
 
     # window nodes always have an action priority of 14
 
-    return Window(
-        type="Window",
-        origin=(origin_x, origin_y),
-        resolution=(resolution_x, resolution_y),
-    )
+    return Window(type="Window", resolution=(resolution_x, resolution_y),)
 
 
 @_read_node_data(NodeType.Display)
@@ -508,30 +500,9 @@ def _read_node_data_display(reader: BinReader) -> Display:
 
     return Display(
         type="Display",
-        origin=(origin_x, origin_y),
         resolution=(resolution_x, resolution_y),
         clear_color=(clear_color_r, clear_color_g, clear_color_b),
     )
-
-
-def _extract_zero_signs(*values: float) -> int:
-    """Extract the zero sign from floats (i.e. if the value is 0.0 or -0.0).
-
-    This is required for complete binary accuracy, since in Python, ``0.0 == -0.0``.
-    So when we compare against the calculated matrix or identity matrix, the
-    zero sign will be ignored. This function saves them for writing.
-    """
-    signs = 0
-    for i, value in enumerate(values):
-        bit = 1 << i
-        if value == 0.0 and copysign(1.0, value) < 0.0:
-            signs |= bit
-    return signs
-
-
-assert (
-    copysign(1.0, -0.0) < 0.0
-), "Running on a platform that doesn't support signed zeros"
 
 
 def read_node_data_object3d(  # pylint: disable=too-many-locals
@@ -590,7 +561,7 @@ def read_node_data_object3d(  # pylint: disable=too-many-locals
         assert_eq("matrix 21", expected[7], matrix21, reader.prev + 76)
         assert_eq("matrix 22", expected[8], matrix22, reader.prev + 80)
 
-    matrix_sign = _extract_zero_signs(
+    matrix_sign = extract_zero_signs(
         matrix00,
         matrix01,
         matrix02,
@@ -675,7 +646,7 @@ def _read_node_data_lod(reader: BinReader) -> LevelOfDetail:
         unk64,  # 64
         one68,  # 68
         zero72,  # 72
-        zero76,  # 76
+        unk76,  # 76
     ) = reader.read(LEVEL_OF_DETAIL)
 
     assert_in("level", (0, 1), level, reader.prev + 0)
@@ -700,14 +671,18 @@ def _read_node_data_lod(reader: BinReader) -> LevelOfDetail:
     # TODO:
     assert_in("field 72", (0, 1), zero72, reader.prev + 72)
     if zero72 == 0:
-        assert_eq("field 76", 0, zero76, reader.prev + 76)
+        assert_eq("field 76", 0, unk76, reader.prev + 76)
     else:
-        assert_ne("field 76", 0, zero76, reader.prev + 76)
+        assert_ne("field 76", 0, unk76, reader.prev + 76)
 
     # object 3d nodes always have an action priority of 6
 
     return LevelOfDetail(
-        type="LOD", level=level == 1, range=(range_near, range_far), unk=unk60
+        type="LOD",
+        level=level == 1,
+        range=(range_near, range_far),
+        unk60=unk60,
+        unk76=unk76,
     )
 
 
@@ -740,7 +715,7 @@ def _read_node_data_light(  # pylint: disable=too-many-locals
         range_max_sq,  # 192
         range_inv,  # 196
         parent_count,  # 200
-        parent_ptr,  # 204,
+        parent_ptr,  # 204
         zero208,
     ) = reader.read(LIGHT)
 
@@ -788,10 +763,12 @@ def _read_node_data_light(  # pylint: disable=too-many-locals
     return Light(
         type="Light",
         direction=(direction_x, direction_y, direction_z),
-        translation=(trans_x, trans_y, trans_z),
         diffuse=diffuse,
         ambient=ambient,
         color=(color_r, color_g, color_b),
         range=(range_min, range_max),
         parent_ptr=parent_ptr,
     )
+
+
+assert READ_NODE_DATA.keys() == set(NodeType)

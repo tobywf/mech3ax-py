@@ -95,11 +95,11 @@ class ObjectMotionSIScript(ScriptObject):
     def read(
         cls: Type[ObjectMotionSIScript], reader: BinReader, anim_def: AnimDef
     ) -> ObjectMotionSIScript:
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @classmethod
     def validate_length(cls, reader: BinReader, actual_length: int) -> None:
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @classmethod
     def validate_and_read(

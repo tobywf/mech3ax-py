@@ -505,11 +505,10 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
         reader, anim_def, reset_state_length, reset_state_ptr, data_offset + 256
     )
 
-    if seq_def_count:
-        assert_ne("seq ptr", 0, seq_defs_ptr, data_offset + 196)
-        anim_def.sequences = _read_sequence_definitions(reader, anim_def, seq_def_count)
-    else:
-        assert_eq("seq ptr", 0, seq_defs_ptr, data_offset + 196)
+    # this could be zero, in which case the pointer would also be NULL (but never is)
+    assert_gt("seq count", 0, seq_def_count, data_offset + 264)
+    assert_ne("seq ptr", 0, seq_defs_ptr, data_offset + 196)
+    anim_def.sequences = _read_sequence_definitions(reader, anim_def, seq_def_count)
 
     # the Callback script object checks if callbacks are allowed, but i also
     # want to catch the case where the flag might've been set, but no callbacks

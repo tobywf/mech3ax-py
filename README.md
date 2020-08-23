@@ -13,14 +13,15 @@ Obviously, this is an unofficial fan effort and not connected to the developers 
 - Interpreter files (`interp.zbd`) can be converted binary-accurately
 - All texture and image files (`rimage.zbd`, `rmechtex*.zbd`, `rtexture*.zbd`, `texture*.zbd`) can be converted binary-accurately
 - All messages extracted from `Mech3Msg.dll`
-- Game engine files (`reader*.zbd`) can be converted binary-accurately
+- Reader files (`reader*.zbd`) can be converted binary-accurately
 - Animations (`motion.zbd`) can be converted binary-accurately. However, because the model data is not very well understood, applying the animations isn't perfect. [Some limbs have incorrect translations](https://github.com/tobywf/mech3ax/issues/2)
 - 'mech models from `mechlib.zbd`, as well as the material index can be converted binary-accurately
+- Animation definitions (`anim.zbd`) can be read and seem to match the reader files
+- `gamez.zbd` files, which contain texture references, materials, meshes, and nodes for each scenario, can be converted binary-accurately (although there are some gaps in what certain values do)
 
 Not supported (yet?):
 
-- `gamez.zbd` files (in progress!)
-- `anim.zbd` files
+- `anim.zbd` file writing
 - The Pirate's Moon expansions ([GitHub issue](https://github.com/tobywf/mech3ax/issues/1))
 - The demo likely won't ever be supported, because it uses different versions/data structures
 
@@ -65,9 +66,12 @@ poetry run mech3_from_zbd motion "original/zbd/motion.zbd" "motion.zip"
 poetry run mech3_to_zbd motion "motion.zip" "motion.zbd"
 # the files should be the same
 cmp "original/zbd/motion.zbd" "motion.zbd"
+poetry run mech3_from_zbd anim "original/zbd/t1/anim.zbd" "anim.zip"
+# anim files cannot be written
+poetry run mech3_from_zbd gamez "original/zbd/t1/gamez.zbd" "gamez.zip"
+poetry run mech3_to_zbd gamez "gamez.zip" "gamez.zbd"
+cmp "original/zbd/t1/gamez.zbd" "gamez.zbd"
 ```
-
-I'm still working on adding more formats to this CLI.
 
 ## Blender script
 
@@ -79,7 +83,7 @@ This is a bit tricky to get running, because of the dependencies. Assuming Blend
 blender \
     --background \
     --factory-startup \
-    --python model2blend.py \
+    --python mech2blend.py \
     -- dir_with_mechlib_zip_and_rmechtex_zip/ "madcat"
 ```
 

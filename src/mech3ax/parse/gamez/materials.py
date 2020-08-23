@@ -260,7 +260,7 @@ def write_materials(  # pylint: disable=too-many-branches
             rgb = 0x0
             red, green, blue = material.color
             texture = 0
-        else:
+        else:  # pragma: no cover
             raise ValueError("neither texture nor color set")
 
         if material.cycle:

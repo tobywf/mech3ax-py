@@ -140,18 +140,6 @@ def _read_node_info(  # pylint: disable=too-many-locals
     return node
 
 
-def _read_node_info_zero(reader: BinReader) -> None:
-    name_raw, *values = reader.read(NODE_INFO)
-    assert_all_zero("name", name_raw, reader.prev + 0)
-
-    for i, value in enumerate(values):
-        offset = i * 4 + 36
-        if i == 6:
-            assert_eq(f"field {offset:02d}", -1, value, reader.prev + offset)
-        else:
-            assert_eq(f"field {offset:02d}", 0, value, reader.prev + offset)
-
-
 def _read_node_infos_zero(reader: BinReader, index: int, array_size: int) -> None:
     for i in range(index, array_size):
         name_raw, *values = reader.read(NODE_INFO)
@@ -177,10 +165,9 @@ def _read_node_data(reader: BinReader, node: Node) -> None:
     read_data_fn = READ_NODE_DATA[node.node_type]
     node.data = read_data_fn(reader)
 
-    # read parent
     if node.parent_count:
         node.parent = reader.read_u32()
-    # read children
+
     node.children = [reader.read_u32() for _ in range(node.children_count)]
 
 
@@ -189,11 +176,11 @@ def _assert_area_partitions(world_node: Optional[Node], nodes: List[Node]) -> No
         if world_node.node_type == NodeType.World and world_node.data.type == "World":
             x_count = world_node.data.area_partition_x_count
             y_count = world_node.data.area_partition_y_count
-        else:
+        else:  # pragma: no cover
             raise Mech3InternalError(
                 f"World node data mismatch ({world_node.node_type}, {world_node.data.type!r})"
             )
-    else:
+    else:  # pragma: no cover
         raise Mech3ParseError("No world node or world node data")
 
     for node in nodes:
@@ -207,9 +194,7 @@ def _assert_area_partitions(world_node: Optional[Node], nodes: List[Node]) -> No
             assert_eq("partition y", -1, y, "")
 
 
-def read_nodes(
-    reader: BinReader, array_size: int, node_count: int, mesh_count: int
-) -> List[Node]:
+def read_nodes(reader: BinReader, array_size: int, mesh_count: int) -> List[Node]:
     prev_offset = end_offset = (
         reader.offset + NODE_INFO.size * array_size + UINT32.size * array_size
     )
@@ -221,7 +206,7 @@ def read_nodes(
 
     # the node_count is wildly inaccurate for some files, and there are more
     # nodes to read
-    for i in range(array_size):
+    for i in range(array_size):  # pragma: no branch
         # if the first character of the name is null, this seems to be a
         # reliable indicator the node is unused
         if reader.data[reader.offset] == 0:
@@ -245,6 +230,7 @@ def read_nodes(
         if node.node_type == NodeType.Empty:
             # for empty nodes, this seems to point to other members in the tree
             assert_between("empty ref index", 4, array_size, offset, reader.prev)
+            node.parent = offset
         else:
             # for other nodes, this seems to point to the location of node data
             assert_between(
@@ -252,13 +238,11 @@ def read_nodes(
             )
             prev_offset = offset
 
-    print("array", array_size, "nodes", node_count, "found", i)
-
     _read_node_infos_zero(reader, i, array_size)
 
     assert_eq("node info end", end_offset, reader.offset, reader.offset)
 
-    for i, (node, offset) in enumerate(zip(nodes, offsets)):
+    for node, offset in zip(nodes, offsets):
         if node.node_type == NodeType.Empty:
             continue
 

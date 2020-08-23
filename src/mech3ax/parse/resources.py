@@ -36,7 +36,7 @@ def _traverse_resources(root: Any, path: Sequence[int]) -> Tuple[int, int]:
     for segment in path:
         try:
             entry = next(entry for entry in entries if entry.id == segment)
-        except StopIteration:
+        except StopIteration:  # pragma: no cover
             raise IndexError(segment) from None
         try:
             directory = entry.directory
@@ -83,7 +83,7 @@ def _extract_zlocids(dll: pefile.PE) -> Iterable[Tuple[str, int]]:
         data_section = next(
             section for section in dll.sections if section.Name.startswith(b".data\x00")
         )
-    except StopIteration:
+    except StopIteration:  # pragma: no cover
         raise Mech3ParseError("No .data section found in PE file") from None
 
     offset = data_section.PointerToRawData

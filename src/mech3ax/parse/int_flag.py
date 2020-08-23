@@ -18,14 +18,14 @@ class IntFlag(BaseIntFlag):
 
     @classmethod
     def check(cls: Type[_T], value: int) -> _T:
-        if _no_zero(cls) and value == 0:
+        if _no_zero(cls) and value == 0:  # pragma: no cover
             raise ValueError("Zero is invalid")
         mask = 0
         members: Sequence[_T] = list(cls)
         for flag in members:
             if flag(value):
                 mask |= flag.value
-        if value != mask:
+        if value != mask:  # pragma: no cover
             unknown = value & ~mask
             raise ValueError(
                 f"Undefined flag: 0x{value:08X}, known: 0x{mask:08X}, unknown: 0x{unknown:08X}"

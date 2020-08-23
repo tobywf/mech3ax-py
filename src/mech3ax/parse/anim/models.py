@@ -43,7 +43,7 @@ class ScriptObject(BaseModel):
 
     @classmethod
     def read(cls: Type[T], reader: BinReader, anim_def: AnimDef) -> T:
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @classmethod
     def validate_length(cls, reader: BinReader, actual_length: int) -> None:
@@ -72,11 +72,11 @@ class ScriptObject(BaseModel):
             except KeyError:
                 OBJECT_REGISTRY_NUM[number] = cls
                 OBJECT_REGISTRY_NAME[name] = cls
-            else:
+            else:  # pragma: no cover
                 raise ValueError(
                     f"{name!r} already registered to {type(existing)} for {type(cls)}"
                 )
-        else:
+        else:  # pragma: no cover
             raise ValueError(
                 f"{number} already registered to {type(existing)} for {type(cls)}"
             )

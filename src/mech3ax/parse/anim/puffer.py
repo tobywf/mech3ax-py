@@ -229,6 +229,7 @@ class PufferState(ScriptObject):
             interval_type: IntervalType = "UNSET"
         else:
             assert_in("interval type", (0, 1), interval_type_raw, reader.prev + 120)
+            # TODO: interval type is always 1?
             if interval_type_raw == 1:
                 interval_type = "DISTANCE"
             else:

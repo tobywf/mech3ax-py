@@ -8,12 +8,12 @@ from mech3ax.errors import Mech3TextureError, assert_eq
 
 LOG = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .fallback import rgb565to888, rgb888to565, check_palette
 else:
     try:
         from ._native import rgb565to888, rgb888to565, check_palette
-    except ImportError:
+    except ImportError:  # pragma: no cover
         MSG = "C extension could not be imported, textures will be slow"
         warnings.warn(MSG)
         LOG.warning(MSG)
@@ -58,7 +58,7 @@ def rgb_to_palette(img: Image, palette: bytes, name: str) -> bytes:
     try:
         for i, rgb in enumerate(zip(it, it, it)):
             buf[i] = rgb_to_index[rgb]
-    except KeyError:
+    except KeyError:  # pragma: no cover
         raise Mech3TextureError(f"Color not found in palette of {name}")
 
     return bytes(buf)
