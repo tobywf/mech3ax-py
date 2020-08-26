@@ -98,17 +98,18 @@ def _extract_zlocids(dll: pefile.PE) -> Iterable[Tuple[str, int]]:
         return data[start:offset].decode("ascii")
 
     # table of message offsets and message table IDs written backwards, highest address
-    # first. the first few elements can be zeroed out (table padding?)
-    offset = 0
+    # first. skip the CRT initialization section
+    offset = 16
     while True:
-        virt_offset, unk, entry_id = unpack_from("<2HI", data, offset)
+        # the offset is actually 32 bits, and points to the RAM location, which is the
+        # virtual address + DLL base address (0x10000000). however, by splitting this
+        # up, the calculation becomes easier, and so does exiting the loop.
+        virt_offset, base_offset, entry_id = unpack_from("<2HI", data, offset)
         offset += 8
 
-        if unk == 0:
-            continue
-
-        # this seems to be the end condition
-        if unk > 4096:
+        # the data isn't meant to be read like this; but this condition triggers
+        # if we've read 4 bytes into the string data
+        if base_offset != 4096:
             break
 
         rel_offset = virt_offset - data_section.VirtualAddress
