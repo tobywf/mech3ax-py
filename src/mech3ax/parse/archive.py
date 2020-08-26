@@ -1,9 +1,8 @@
 """Read and write ZArchive-based files.
 
 A binary accurate output is produced by default. But this required reading and
-writing the useless values in the table of contents ("garbage"). ZArchives don't
-use these, and they are uninitialized memory written out, so usually safe to
-discard. If they aren't required, ``b""`` may be supplied instead.
+writing the occasionally useless values in the table of contents. ZArchives don't
+use these, and sometimes they are uninitialized memory written out.
 
 Additionally, duplicate names may be present in a ZArchive. If code reading and
 writing archives wants to be binary accurate, then entries must be written to
