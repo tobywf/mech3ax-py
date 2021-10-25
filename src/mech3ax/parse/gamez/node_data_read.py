@@ -726,11 +726,11 @@ def _read_node_data_light(  # pylint: disable=too-many-locals
 
     assert_all_zero("field 024", zero024, reader.prev + 24)
 
-    assert_eq("field 136", 1, one136, reader.prev + 136)
-    assert_eq("field 140", 0, zero140, reader.prev + 140)
-    assert_eq("field 144", 0, zero144, reader.prev + 144)
-    assert_eq("field 148", 0, zero148, reader.prev + 148)
-    assert_eq("field 152", 0, zero152, reader.prev + 152)
+    assert_eq("field 136", 1.0, one136, reader.prev + 136)
+    assert_eq("field 140", 0.0, zero140, reader.prev + 140)
+    assert_eq("field 144", 0.0, zero144, reader.prev + 144)
+    assert_eq("field 148", 0.0, zero148, reader.prev + 148)
+    assert_eq("field 152", 0.0, zero152, reader.prev + 152)
 
     assert_between("diffuse", 0.0, 1.0, diffuse, reader.prev + 156)
     assert_between("ambient", 0.0, 1.0, ambient, reader.prev + 160)

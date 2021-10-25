@@ -54,7 +54,7 @@ def read_textures(reader: BinReader, count: int) -> List[Texture]:
         assert_eq("index", 0, index, reader.prev + 32)
         # not sure. a pointer to the next texture in the global array? or
         # something to do with mipmaps?
-        assert_eq("field 32", -1, mone36, reader.prev + 36)
+        assert_eq("field 36", -1, mone36, reader.prev + 36)
         textures.append(Texture(name=texture, suffix=suffix))
 
     return textures

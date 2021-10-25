@@ -215,7 +215,7 @@ class LightState(ScriptObject):
 class LightAnimation(ScriptObject):
     _NAME: str = "LIGHT_ANIMATION"
     _NUMBER: int = 5
-    _STRUCT: Struct = Struct("<32s i 4f 2f 6f 3f f")
+    _STRUCT: Struct = Struct("<32s i 4f 2f 3f 6f f")
 
     name: str
     range: Tuple[float, float] = (0.0, 0.0)

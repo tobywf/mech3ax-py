@@ -179,14 +179,14 @@ def _write_node_data_world(f: BinaryIO, world: World) -> None:
         1.0 / 256.0,  # virt_partition_x_inv
         1.0 / -256.0,  # virt_partition_y_inv
         -192.0,  # virt_partition_diag
-        3,  # partition_inclusion_tol_low
-        3,  # partition_inclusion_tol_high
+        3.0,  # partition_inclusion_tol_low
+        3.0,  # partition_inclusion_tol_high
         world.area_partition_x_count,  # virt_partition_x_count
         world.area_partition_y_count,  # virt_partition_y_count
         world.virt_partition_ptr,
-        1,  # one148
-        1,  # one152
-        1,  # one156
+        1.0,  # one148
+        1.0,  # one152
+        1.0,  # one156
         1,  # children_count
         world.children_ptr,
         world.lights_ptr,
@@ -315,11 +315,11 @@ def _write_node_data_light(f: BinaryIO, light: Light) -> None:
         0.0,  # trans_y
         0.0,  # trans_z
         b"",
-        1,  # one136
-        0,  # zero140
-        0,  # zero144
-        0,  # zero148
-        0,  # zero152
+        1.0,  # one136
+        0.0,  # zero140
+        0.0,  # zero144
+        0.0,  # zero148
+        0.0,  # zero152
         light.diffuse,
         light.ambient,
         color_r,

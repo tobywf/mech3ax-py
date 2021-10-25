@@ -214,6 +214,7 @@ class AnimDefPointers(BaseModel):
     activ_prereqs_ptr: int = 0
     anim_refs_ptr: int = 0
     reset_state_ptr: int = 0
+    reset_state_events_ptr: int = 0
     seq_defs_ptr: int = 0
 
 

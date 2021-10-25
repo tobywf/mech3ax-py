@@ -35,7 +35,7 @@ from .script import _parse_script
 
 LOG = logging.getLogger(__name__)
 
-ANIM_DEF = Struct("<32s 32s I 32s I 44s I 4B 6f 4I I 4I 40s II 12B 10I")
+ANIM_DEF = Struct("<32s 32s I 32s I 44s I 4B 6f 4I 2I 3I 40s II 12B 10I")
 assert ANIM_DEF.size == 316, ANIM_DEF.size
 
 STATIC_SOUND = Struct("<32s I")
@@ -290,13 +290,13 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
         zero188,
         zero192,
         seq_defs_ptr,  # 196
-        int200,
+        reset_state_ptr,  # 200
         int204,
         int208,
         int212,
         zero216,  # 40 zero bytes
-        reset_state_ptr,  # 256
-        reset_state_length,  # 260
+        reset_state_events_ptr,  # 256
+        reset_state_events_len,  # 260
         seq_def_count,  # 264
         object_count,  # 265
         node_count,  # 266
@@ -502,7 +502,11 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
 
     # unconditional read
     anim_def.reset_sequence = _read_reset_state(
-        reader, anim_def, reset_state_length, reset_state_ptr, data_offset + 256
+        reader,
+        anim_def,
+        reset_state_events_len,
+        reset_state_events_ptr,
+        data_offset + 256,
     )
 
     # this could be zero, in which case the pointer would also be NULL (but never is)
@@ -530,6 +534,7 @@ def read_anim_def(  # pylint: disable=too-many-locals,too-many-branches,too-many
         activ_prereqs_ptr=activ_prereqs_ptr,
         anim_refs_ptr=anim_refs_ptr,
         reset_state_ptr=reset_state_ptr,
+        reset_state_events_ptr=reset_state_events_ptr,
         seq_defs_ptr=seq_defs_ptr,
     )
 

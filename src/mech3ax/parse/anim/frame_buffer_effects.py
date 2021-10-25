@@ -47,8 +47,8 @@ class FrameBufferEffectColorFromTo(ScriptObject):
         assert_between("to green", 0.0, 1.0, to_g, reader.prev + 16)
         assert_between("from blue", 0.0, 1.0, from_b, reader.prev + 24)
         assert_between("to blue", 0.0, 1.0, to_b, reader.prev + 28)
-        assert_between("from alpha", 0.0, 1.0, from_a, reader.prev + 32)
-        assert_between("to alpha", 0.0, 1.0, to_a, reader.prev + 36)
+        assert_between("from alpha", 0.0, 1.0, from_a, reader.prev + 36)
+        assert_between("to alpha", 0.0, 1.0, to_a, reader.prev + 40)
 
         assert_gt("run time", 0.0, run_time, reader.prev + 48)
 

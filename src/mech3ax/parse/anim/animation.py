@@ -85,9 +85,9 @@ class CallAnimation(ScriptObject):
         if CallAnimationFlag.WaitFor(flag):
             # since multiple animation with the same name may be called, translating
             # this to a name would lose information
-            max_pref_ref = len(anim_def.anim_refs) - 1
+            max_prev_ref = len(anim_def.anim_refs) - 1
             assert_between(
-                "wait for", 0, max_pref_ref, wait_for_completion, reader.prev + 38
+                "wait for", 0, max_prev_ref, wait_for_completion, reader.prev + 38
             )
         else:
             assert_eq("wait for", -1, wait_for_completion, reader.prev + 38)  # 50
